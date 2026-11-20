@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CE-402 Geotechnical Design Platform | Group 8</title>
+
+  <!-- Tailwind CSS CDN (Zero-build styling) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Plotly.js CDN (Interactive engineering charts) -->
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+
+  <style>
+    /* Subtle scrollbar refinement for data-dense engineering tables */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col font-sans antialiased">
+
+  <!-- Top Slate-Navy Engineering Header -->
+  <header class="bg-slate-900 text-white shadow-md border-b border-slate-700">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-sky-600 flex items-center justify-center font-bold text-sm tracking-tight shadow-inner">
+          G8
+        </div>
+        <div>
+          <h1 class="text-lg sm:text-xl font-semibold tracking-tight text-white">
+            CE-402 Geotechnical Design Platform <span class="text-slate-400 font-normal">|</span> <span class="text-sky-400">Group 8</span>
+          </h1>
+          <p class="text-xs text-slate-400">
+            Zero-Installation Browser Suite &bull; Modular Vanilla JS Architecture
+          </p>
+        </div>
+      </div>
+
+      <!-- Strict SI Unit Enforcement Badge -->
+      <div class="inline-flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-xs font-mono text-slate-200 self-start sm:self-auto">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        <span>SI ONLY: kN &bull; kPa &bull; m &bull; mm</span>
+      </div>
+    </div>
+
+    <!-- Module Tab Navigation Bar -->
+    <nav class="bg-slate-800/90 border-t border-slate-700" aria-label="Geotechnical Modules">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex space-x-1 overflow-x-auto py-2" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            id="btn-tab-p1"
+            data-tab-target="tab-p1"
+            aria-controls="tab-p1"
+            aria-selected="true"
+            class="tab-btn whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors bg-sky-600 text-white shadow-sm"
+          >
+            Module P1: Soil Profile
+          </button>
+
+          <button
+            type="button"
+            role="tab"
+            id="btn-tab-p2"
+            data-tab-target="tab-p2"
+            aria-controls="tab-p2"
+            aria-selected="false"
+            class="tab-btn whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors text-slate-300 hover:bg-slate-700 hover:text-white"
+          >
+            Module P2: SPT &amp; Direct Shear
+          </button>
+
+          <button
+            type="button"
+            role="tab"
+            id="btn-tab-p3"
+            data-tab-target="tab-p3"
+            aria-controls="tab-p3"
+            aria-selected="false"
+            class="tab-btn whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors text-slate-300 hover:bg-slate-700 hover:text-white"
+          >
+            Module P3
+          </button>
+
+          <button
+            type="button"
+            role="tab"
+            id="btn-tab-p4"
+            data-tab-target="tab-p4"
+            aria-controls="tab-p4"
+            aria-selected="false"
+            class="tab-btn whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors text-slate-300 hover:bg-slate-700 hover:text-white"
+          >
+            Module P4
+          </button>
+
+          <button
+            type="button"
+            role="tab"
+            id="btn-tab-p5"
+            data-tab-target="tab-p5"
+            aria-controls="tab-p5"
+            aria-selected="false"
+            class="tab-btn whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors text-slate-300 hover:bg-slate-700 hover:text-white"
+          >
+            Module P5
+          </button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Main Responsive Workspace -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <!-- Module P1 Panel (Active by default) -->
+    <div id="tab-p1" class="tab-panel" role="tabpanel" aria-labelledby="btn-tab-p1"></div>
+
+    <!-- Module P2 Panel -->
+    <div id="tab-p2" class="tab-panel hidden" role="tabpanel" aria-labelledby="btn-tab-p2"></div>
+
+    <!-- Module P3 Panel -->
+    <div id="tab-p3" class="tab-panel hidden" role="tabpanel" aria-labelledby="btn-tab-p3"></div>
+
+    <!-- Module P4 Panel -->
+    <div id="tab-p4" class="tab-panel hidden" role="tabpanel" aria-labelledby="btn-tab-p4"></div>
+
+    <!-- Module P5 Panel -->
+    <div id="tab-p5" class="tab-panel hidden" role="tabpanel" aria-labelledby="btn-tab-p5"></div>
+  </main>
+
+  <!-- Minimal Footer -->
+  <footer class="bg-white border-t border-slate-200 py-3 mt-auto">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-1">
+      <span>CE-402 Geotechnical Engineering Design Platform &mdash; Group 8</span>
+      <span class="font-mono">γ<sub>w</sub> = 9.81 kN/m³ | All calculations strictly in SI units</span>
+    </div>
+  </footer>
+
+  <!-- Lightweight Tab-Switching Controller -->
+  <script>
+    (function initTabNavigation() {
+      const tabButtons = document.querySelectorAll(".tab-btn");
+      const tabPanels = document.querySelectorAll(".tab-panel");
+
+      const ACTIVE_CLASSES = ["bg-sky-600", "text-white", "shadow-sm"];
+      const INACTIVE_CLASSES = ["text-slate-300", "hover:bg-slate-700", "hover:text-white"];
+
+      function activateTab(targetId) {
+        tabButtons.forEach((btn) => {
+          const isMatch = btn.getAttribute("data-tab-target") === targetId;
+          btn.setAttribute("aria-selected", String(isMatch));
+
+          if (isMatch) {
+            btn.classList.remove(...INACTIVE_CLASSES);
+            btn.classList.add(...ACTIVE_CLASSES);
+          } else {
+            btn.classList.remove(...ACTIVE_CLASSES);
+            btn.classList.add(...INACTIVE_CLASSES);
+          }
+        });
+
+        tabPanels.forEach((panel) => {
+          const isMatch = panel.id === targetId;
+          panel.classList.toggle("hidden", !isMatch);
+
+          // Resize any Plotly charts rendered inside a previously hidden tab
+          if (isMatch && typeof window.Plotly !== "undefined") {
+            const plots = panel.querySelectorAll(".js-plotly-plot");
+            plots.forEach((plotEl) => {
+              window.Plotly.Plots.resize(plotEl);
+            });
+          }
+        });
+      }
+
+      tabButtons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const targetId = btn.getAttribute("data-tab-target");
+          activateTab(targetId);
+        });
+      });
+
+      // Expose tab switcher for programmatic navigation if needed
+      window.activateGeotechTab = activateTab;
+    })();
+  </script>
+
+  <!-- Core Application Scripts (Classic script tags for file:// and GitHub Pages compatibility) -->
+  <script src="js/state.js"></script>
+  <script src="js/moduleP1_logic.js"></script>
+  <script src="js/moduleP1_ui.js"></script>
+</body>
+</html>
