@@ -5,60 +5,106 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CE-402 Geotechnical Design Platform | Group 8</title>
 
+  <!-- Clean Engineering Typography (Inter + JetBrains Mono) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
   <!-- Tailwind CSS CDN (Zero-build styling) -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ["Inter", "system-ui", "-apple-system", "sans-serif"],
+            mono: ["JetBrains Mono", "ui-monospace", "SFMono-Regular", "monospace"]
+          }
+        }
+      }
+    };
+  </script>
 
   <!-- Plotly.js CDN (Interactive engineering charts) -->
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
 
   <style>
-    /* Subtle scrollbar refinement for data-dense engineering tables */
+    /* Subtle precision scrollbar for wide data tables */
     ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
+      width: 7px;
+      height: 7px;
     }
     ::-webkit-scrollbar-track {
-      background: #f1f5f9;
+      background: #f8fafc;
     }
     ::-webkit-scrollbar-thumb {
       background: #cbd5e1;
-      border-radius: 4px;
+      border-radius: 9999px;
     }
     ::-webkit-scrollbar-thumb:hover {
       background: #94a3b8;
     }
+
+    /* Hide default number spinners for crisp spreadsheet-like numeric cells */
+    input[type="number"].clean-num::-webkit-inner-spin-button,
+    input[type="number"].clean-num::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type="number"].clean-num {
+      -moz-appearance: textfield;
+      font-variant-numeric: tabular-nums;
+    }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col font-sans antialiased">
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col font-sans antialiased selection:bg-indigo-100 selection:text-indigo-900">
 
-  <!-- Top Slate-Navy Engineering Header -->
-  <header class="bg-slate-900 text-white shadow-md border-b border-slate-700">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-lg bg-sky-600 flex items-center justify-center font-bold text-sm tracking-tight shadow-inner">
-          G8
+  <!-- Sticky Top App Shell -->
+  <header class="sticky top-0 z-30 bg-slate-950/95 backdrop-blur-md text-white border-b border-slate-800 shadow-sm">
+    <!-- Top Brand & Metadata Bar -->
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3.5 min-w-0">
+        <!-- Geometric Strata Logo Mark -->
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-500 to-sky-500 flex items-center justify-center shadow-inner ring-1 ring-white/15 shrink-0">
+          <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 7h18" />
+            <path d="M3 12h18" />
+            <path d="M3 17h18" />
+            <path d="M8 7v5" />
+            <path d="M16 12v5" />
+          </svg>
         </div>
-        <div>
-          <h1 class="text-lg sm:text-xl font-semibold tracking-tight text-white">
-            CE-402 Geotechnical Design Platform <span class="text-slate-400 font-normal">|</span> <span class="text-sky-400">Group 8</span>
-          </h1>
-          <p class="text-xs text-slate-400">
-            Zero-Installation Browser Suite &bull; Modular Vanilla JS Architecture
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <h1 class="text-sm sm:text-base font-semibold tracking-tight text-white truncate">
+              CE-402 Geotechnical Design Platform
+            </h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-indigo-500/20 text-indigo-300 ring-1 ring-inset ring-indigo-400/30">
+              Group 8
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-400 truncate">
+            Stratigraphic Modeling, Field Testing &amp; Foundation Analysis Suite
           </p>
         </div>
       </div>
 
-      <!-- Strict SI Unit Enforcement Badge -->
-      <div class="inline-flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-xs font-mono text-slate-200 self-start sm:self-auto">
-        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-        <span>SI ONLY: kN &bull; kPa &bull; m &bull; mm</span>
+      <!-- Right Status Badges -->
+      <div class="flex items-center gap-2.5 shrink-0">
+        <div class="hidden md:inline-flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-full px-3 py-1 text-[11px] font-mono text-slate-300">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+          <span>STRICT SI: kN &middot; kPa &middot; m &middot; mm</span>
+        </div>
+        <div class="inline-flex items-center bg-slate-900 border border-slate-800 rounded-full px-2.5 py-1 text-[11px] font-mono text-slate-300">
+          &gamma;<sub>w</sub> = 9.81
+        </div>
       </div>
     </div>
 
-    <!-- Module Tab Navigation Bar -->
-    <nav class="bg-slate-800/90 border-t border-slate-700" aria-label="Geotechnical Modules">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex space-x-1 overflow-x-auto py-2" role="tablist">
+    <!-- Sleek Module Navigation Strip -->
+    <nav class="bg-slate-900/80 border-t border-slate-800/80" aria-label="Geotechnical Modules">
+      <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center gap-1.5 overflow-x-auto py-2" role="tablist">
           <button
             type="button"
             role="tab"
@@ -66,9 +112,10 @@
             data-tab-target="tab-p1"
             aria-controls="tab-p1"
             aria-selected="true"
-            class="tab-btn whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors bg-sky-600 text-white shadow-sm"
+            class="tab-btn group inline-flex items-center gap-2 whitespace-nowrap px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all bg-white text-slate-950 shadow-sm"
           >
-            Module P1: Soil Profile
+            <span class="tab-pill font-mono text-[10px] font-semibold px-1.5 py-0.5 rounded bg-indigo-600 text-white">P1</span>
+            <span>Soil Profile</span>
           </button>
 
           <button
@@ -78,9 +125,10 @@
             data-tab-target="tab-p2"
             aria-controls="tab-p2"
             aria-selected="false"
-            class="tab-btn whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors text-slate-300 hover:bg-slate-700 hover:text-white"
+            class="tab-btn group inline-flex items-center gap-2 whitespace-nowrap px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all text-slate-300 hover:bg-slate-800 hover:text-white"
           >
-            Module P2: SPT &amp; Direct Shear
+            <span class="tab-pill font-mono text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 group-hover:bg-slate-700">P2</span>
+            <span>SPT &amp; Direct Shear</span>
           </button>
 
           <button
@@ -90,9 +138,10 @@
             data-tab-target="tab-p3"
             aria-controls="tab-p3"
             aria-selected="false"
-            class="tab-btn whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors text-slate-300 hover:bg-slate-700 hover:text-white"
+            class="tab-btn group inline-flex items-center gap-2 whitespace-nowrap px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all text-slate-300 hover:bg-slate-800 hover:text-white"
           >
-            Module P3
+            <span class="tab-pill font-mono text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 group-hover:bg-slate-700">P3</span>
+            <span>Module P3</span>
           </button>
 
           <button
@@ -102,9 +151,10 @@
             data-tab-target="tab-p4"
             aria-controls="tab-p4"
             aria-selected="false"
-            class="tab-btn whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors text-slate-300 hover:bg-slate-700 hover:text-white"
+            class="tab-btn group inline-flex items-center gap-2 whitespace-nowrap px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all text-slate-300 hover:bg-slate-800 hover:text-white"
           >
-            Module P4
+            <span class="tab-pill font-mono text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 group-hover:bg-slate-700">P4</span>
+            <span>Module P4</span>
           </button>
 
           <button
@@ -114,86 +164,86 @@
             data-tab-target="tab-p5"
             aria-controls="tab-p5"
             aria-selected="false"
-            class="tab-btn whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors text-slate-300 hover:bg-slate-700 hover:text-white"
+            class="tab-btn group inline-flex items-center gap-2 whitespace-nowrap px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all text-slate-300 hover:bg-slate-800 hover:text-white"
           >
-            Module P5
+            <span class="tab-pill font-mono text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 group-hover:bg-slate-700">P5</span>
+            <span>Module P5</span>
           </button>
         </div>
       </div>
     </nav>
   </header>
 
-  <!-- Main Responsive Workspace -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-    <!-- Module P1 Panel (Active by default) -->
+  <!-- Fluid Engineering Workspace -->
+  <main class="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
     <div id="tab-p1" class="tab-panel" role="tabpanel" aria-labelledby="btn-tab-p1"></div>
-
-    <!-- Module P2 Panel -->
     <div id="tab-p2" class="tab-panel hidden" role="tabpanel" aria-labelledby="btn-tab-p2"></div>
-
-    <!-- Module P3 Panel -->
     <div id="tab-p3" class="tab-panel hidden" role="tabpanel" aria-labelledby="btn-tab-p3"></div>
-
-    <!-- Module P4 Panel -->
     <div id="tab-p4" class="tab-panel hidden" role="tabpanel" aria-labelledby="btn-tab-p4"></div>
-
-    <!-- Module P5 Panel -->
     <div id="tab-p5" class="tab-panel hidden" role="tabpanel" aria-labelledby="btn-tab-p5"></div>
   </main>
 
-  <!-- Minimal Footer -->
-  <footer class="bg-white border-t border-slate-200 py-3 mt-auto">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-1">
-      <span>CE-402 Geotechnical Engineering Design Platform &mdash; Group 8</span>
-      <span class="font-mono">γ<sub>w</sub> = 9.81 kN/m³ | All calculations strictly in SI units</span>
+  <!-- Minimal Technical Footer -->
+  <footer class="bg-white border-t border-slate-200/80 py-3 mt-auto">
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-500 gap-1">
+      <span>CE-402 Geotechnical Design Platform &mdash; Group 8</span>
+      <span class="font-mono">EN 1997-1 &middot; ASTM D2487 &middot; IS 2131:1981 &middot; &gamma;<sub>w</sub> = 9.81 kN/m&sup3;</span>
     </div>
   </footer>
 
   <!-- Lightweight Tab-Switching Controller -->
   <script>
     (function initTabNavigation() {
-      const tabButtons = document.querySelectorAll(".tab-btn");
-      const tabPanels = document.querySelectorAll(".tab-panel");
+      var tabButtons = document.querySelectorAll(".tab-btn");
+      var tabPanels = document.querySelectorAll(".tab-panel");
 
-      const ACTIVE_CLASSES = ["bg-sky-600", "text-white", "shadow-sm"];
-      const INACTIVE_CLASSES = ["text-slate-300", "hover:bg-slate-700", "hover:text-white"];
+      var BTN_ACTIVE = ["bg-white", "text-slate-950", "shadow-sm"];
+      var BTN_INACTIVE = ["text-slate-300", "hover:bg-slate-800", "hover:text-white"];
+      var PILL_ACTIVE = ["bg-indigo-600", "text-white"];
+      var PILL_INACTIVE = ["bg-slate-800", "text-slate-300", "group-hover:bg-slate-700"];
 
       function activateTab(targetId) {
-        tabButtons.forEach((btn) => {
-          const isMatch = btn.getAttribute("data-tab-target") === targetId;
+        tabButtons.forEach(function (btn) {
+          var isMatch = btn.getAttribute("data-tab-target") === targetId;
+          var pill = btn.querySelector(".tab-pill");
           btn.setAttribute("aria-selected", String(isMatch));
 
           if (isMatch) {
-            btn.classList.remove(...INACTIVE_CLASSES);
-            btn.classList.add(...ACTIVE_CLASSES);
+            btn.classList.remove.apply(btn.classList, BTN_INACTIVE);
+            btn.classList.add.apply(btn.classList, BTN_ACTIVE);
+            if (pill) {
+              pill.classList.remove.apply(pill.classList, PILL_INACTIVE);
+              pill.classList.add.apply(pill.classList, PILL_ACTIVE);
+            }
           } else {
-            btn.classList.remove(...ACTIVE_CLASSES);
-            btn.classList.add(...INACTIVE_CLASSES);
+            btn.classList.remove.apply(btn.classList, BTN_ACTIVE);
+            btn.classList.add.apply(btn.classList, BTN_INACTIVE);
+            if (pill) {
+              pill.classList.remove.apply(pill.classList, PILL_ACTIVE);
+              pill.classList.add.apply(pill.classList, PILL_INACTIVE);
+            }
           }
         });
 
-        tabPanels.forEach((panel) => {
-          const isMatch = panel.id === targetId;
+        tabPanels.forEach(function (panel) {
+          var isMatch = panel.id === targetId;
           panel.classList.toggle("hidden", !isMatch);
 
-          // Resize any Plotly charts rendered inside a previously hidden tab
           if (isMatch && typeof window.Plotly !== "undefined") {
-            const plots = panel.querySelectorAll(".js-plotly-plot");
-            plots.forEach((plotEl) => {
+            var plots = panel.querySelectorAll(".js-plotly-plot");
+            plots.forEach(function (plotEl) {
               window.Plotly.Plots.resize(plotEl);
             });
           }
         });
       }
 
-      tabButtons.forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const targetId = btn.getAttribute("data-tab-target");
-          activateTab(targetId);
+      tabButtons.forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          activateTab(btn.getAttribute("data-tab-target"));
         });
       });
 
-      // Expose tab switcher for programmatic navigation if needed
       window.activateGeotechTab = activateTab;
     })();
   </script>
