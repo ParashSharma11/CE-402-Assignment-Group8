@@ -140,6 +140,47 @@
     };
   }
 
+  /**
+   * Default shallow foundation geometry, loading, and analysis parameters for Module P3.
+   * Compatible with IS 6403:1981 (Code of Practice for Determination of Bearing Capacity
+   * of Shallow Foundations) and the default 3-layer Module P1 profile.
+   * * Strict SI units: Dimensions/Eccentricity (m), Stress/Strength (kPa),
+   *   Unit Weight (kN/m³), Angles (deg), Factor of Safety (-).
+   */
+  function createDefaultP3Input() {
+    return {
+      shape: "Rectangular",         // Allowed: "Strip", "Square", "Rectangular", "Circular"
+      B_m: 2.0,                     // Footing width or diameter (m)
+      L_m: 3.0,                     // Footing length (m); ignored/synced for Strip, Square, Circular
+      Df_m: 1.5,                    // Embedment depth below ground surface (m)
+      eB_m: 0.0,                    // Load eccentricity along width B (m)
+      eL_m: 0.0,                    // Load eccentricity along length L (m)
+      alpha_deg: 0.0,               // Load inclination angle from vertical (deg)
+      FS: 2.5,                      // Factor of safety for net safe bearing capacity (-)
+      shearMode: "Auto (IS 6403)",  // Allowed: "Auto (IS 6403)", "General Shear", "Local Shear"
+      analysisType: "Drained",      // Allowed: "Drained" (c', phi'), "Undrained" (su, phi=0)
+      waterTableMode: "Design",     // Allowed: "Design" (zw_design), "Measured" (zw_measured)
+      useManualSoil: false,         // false = auto-extract from Module P1; true = use manual fields below
+      manual_c: 0.0,                // Manual cohesion c' or su (kPa)
+      manual_phi: 34.0,             // Manual friction angle phi' (deg)
+      manual_gamma_above: 18.0,     // Manual moist unit weight above footing base (kN/m³)
+      manual_gamma_below: 18.0,     // Manual moist unit weight in failure zone below base (kN/m³)
+      manual_gamma_sat_below: 20.0  // Manual saturated unit weight in failure zone below base (kN/m³)
+    };
+  }
+
+  /**
+   * Creates a clean Module P3 computed results container.
+   * * result: Full IS 6403:1981 computed object populated by Module P3 logic.
+   * * errors: Array of validation error strings.
+   */
+  function createEmptyP3Results() {
+    return {
+      result: null,
+      errors: []
+    };
+  }
+
   // Internal list of reactive subscriber callbacks (Modules P1–P5)
   var subscribers = [];
 
@@ -183,6 +224,15 @@
 
     // Computed outputs and validation diagnostics populated by Module P2 logic
     p2Results: createEmptyP2Results(),
+
+    // --------------------------------------------------------------------------
+    // MODULE P3: SHALLOW FOUNDATION BEARING CAPACITY (IS 6403:1981)
+    // --------------------------------------------------------------------------
+    // Editable shallow footing geometry, loading, and soil source configuration
+    p3Input: createDefaultP3Input(),
+
+    // Computed IS 6403:1981 bearing capacity output and validation diagnostics
+    p3Results: createEmptyP3Results(),
 
     // --------------------------------------------------------------------------
     // REACTIVE PUB/SUB ENGINE
@@ -276,7 +326,7 @@
 
     /**
      * Resets the Module P1 profile and groundwater inputs back to the default 3-layer model.
-     * Leaves Module P2 lab/field test inputs intact.
+     * Leaves Module P2 and Module P3 data intact.
      */
     resetToDefaults: function () {
       this.zw_measured = 3.50;
@@ -349,12 +399,63 @@
 
     /**
      * Resets only Module P2 SPT records, Direct Shear points, and P2 results to defaults,
-     * preserving the active Module P1 soil profile and groundwater depths.
+     * preserving the active Module P1 soil profile, groundwater depths, and Module P3 state.
      */
     resetP2Defaults: function () {
       this.sptRecords = createDefaultSptRecords();
       this.directShearPoints = createDefaultDirectShearPoints();
       this.p2Results = createEmptyP2Results();
+      this.notify();
+    },
+
+    // --------------------------------------------------------------------------
+    // MODULE P3 MUTATORS (IS 6403:1981 Shallow Foundation Bearing Capacity)
+    // --------------------------------------------------------------------------
+
+    /**
+     * Merges a partial or full plain object into this.p3Input (preserving omitted keys)
+     * and notifies all subscribed modules.
+     * @param {Object} updates Partial or full Module P3 input fields.
+     */
+    setP3Input: function (updates) {
+      if (!updates || typeof updates !== "object" || Array.isArray(updates)) {
+        console.warn("[GeotechState] setP3Input() expects a plain object.");
+        return;
+      }
+      this.p3Input = Object.assign({}, this.p3Input, updates);
+      this.notify();
+    },
+
+    /**
+     * Stores computed Module P3 results using defensive partial-update preservation.
+     * Only overwrites "result" or "errors" if explicitly present on resultsObj, and
+     * only notifies subscribers when triggerNotify === true to prevent recursive loops.
+     * @param {Object} resultsObj Partial or full { result, errors } object.
+     * @param {boolean} [triggerNotify=false]
+     */
+    setP3Results: function (resultsObj, triggerNotify) {
+      var obj = resultsObj && typeof resultsObj === "object" ? resultsObj : {};
+      var current = this.p3Results || createEmptyP3Results();
+      var hasOwn = Object.prototype.hasOwnProperty;
+
+      this.p3Results = {
+        result: hasOwn.call(obj, "result") ? obj.result : current.result,
+        errors: hasOwn.call(obj, "errors")
+          ? (Array.isArray(obj.errors) ? obj.errors : [])
+          : current.errors
+      };
+      if (triggerNotify === true) {
+        this.notify();
+      }
+    },
+
+    /**
+     * Resets ONLY Module P3 footing inputs and computed results back to defaults,
+     * leaving Module P1 and Module P2 state completely intact.
+     */
+    resetP3Defaults: function () {
+      this.p3Input = createDefaultP3Input();
+      this.p3Results = createEmptyP3Results();
       this.notify();
     }
   };
