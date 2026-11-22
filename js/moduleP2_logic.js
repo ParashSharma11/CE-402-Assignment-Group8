@@ -571,13 +571,12 @@
       phiPrimeDesign = phiPrimeOrigin;
     }
 
-    var signStr = cPrimeRaw >= 0 ? " + " : " − ";
+    var cPrefix = cPrimeRaw >= 0 ? "" : "−";
     var equationText =
       "τ = " +
+      cPrefix +
       Math.abs(cPrimeRaw).toFixed(2) +
-      (cPrimeRaw >= 0 ? "" : " (raw)") +
-      signStr +
-      "σ_n · tan(" +
+      " + σ_n · tan(" +
       phiPrimeRaw.toFixed(1) +
       "°)";
 
