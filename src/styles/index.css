@@ -111,6 +111,8 @@ html.lenis, html.lenis body { height: auto; }
 /* Range input fallback styling (Radix slider is used in the app) */
 input[type="number"]::-webkit-inner-spin-button { opacity: 0.4; }
 
+@keyframes gf-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }

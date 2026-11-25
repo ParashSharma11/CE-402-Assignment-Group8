@@ -4,6 +4,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import Lenis from 'lenis';
 import { ScrambleText, pl } from './motion';
 import { useProject } from '../store/project';
+import { ScrollProgress } from './extras';
 
 /* ---------------- Smooth scroll (Lenis) ---------------- */
 export function SmoothScroll() {
@@ -105,7 +106,7 @@ export function Nav() {
   const name = useProject((s) => s.project.name);
   const [hover, setHover] = useState<string | null>(null);
   return (
-    <header className="no-print sticky top-0 z-50 border-b border-line-soft/80 bg-ground/80 backdrop-blur-md">
+    <header className="no-print sticky top-0 z-50 border-b border-line-soft/80 bg-ground/95 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-[1440px] items-center gap-6 px-4 sm:px-8">
         <NavLink to="/" className="font-giant text-[26px] leading-none tracking-[0.02em] text-ink">GEOFOUND</NavLink>
         <span className="hud hidden truncate lg:block">{name}</span>
@@ -122,6 +123,7 @@ export function Nav() {
           ))}
         </nav>
       </div>
+      <ScrollProgress />
     </header>
   );
 }
