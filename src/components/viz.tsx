@@ -48,15 +48,15 @@ export function SoilColumn({ bh, height = 460, width = 300, Df }: { bh: Borehole
       {bh.spt.filter((s) => s.depth <= zMax).map((s) => (
         <g key={s.depth}><path d={`M${x0 + w} ${y(s.depth)}h6`} stroke="#FF4A1C" /><text x={width - 6} y={y(s.depth) + 3} textAnchor="end" className="num" fontSize="9.5" fill={s.N <= 8 ? '#FF4A1C' : '#E9C2B8'}>{s.refusal || s.N >= 100 ? '>100' : s.N}</text></g>
       ))}
-      <motion.g animate={{ y: y(bh.designWT) }} transition={{ type: 'spring', stiffness: 120, damping: 18 }}>
+      <g style={{ transform: `translateY(${y(bh.designWT)}px)`, transition: 'transform 0.7s cubic-bezier(.34,1.56,.64,1)' }}>
         <path d={`M${x0 - 10} 0H${x0 + w + 10}`} stroke="#6CC4D6" strokeWidth="1.5" strokeDasharray="5 4" />
         <path d={`M${x0 + w + 4} -10h10l-5 8z`} fill="#6CC4D6" />
         <text x={x0 - 12} y={-4} textAnchor="end" className="num" fontSize="9" fill="#6CC4D6">design</text>
-      </motion.g>
-      <motion.g animate={{ y: y(bh.measuredWT) }} transition={{ type: 'spring', stiffness: 120, damping: 18 }}>
+      </g>
+      <g style={{ transform: `translateY(${y(bh.measuredWT)}px)`, transition: 'transform 0.7s cubic-bezier(.34,1.56,.64,1)' }}>
         <path d={`M${x0} 0H${x0 + w}`} stroke="#6CC4D6" strokeOpacity="0.55" strokeDasharray="2 3" />
         <text x={x0 - 12} y={3} textAnchor="end" className="num" fontSize="9" fill="#6CC4D6" fillOpacity="0.7">meas.</text>
-      </motion.g>
+      </g>
       {Df !== undefined && <g><path d={`M${x0 - 4} ${y(Df)}H${x0 + w + 4}`} stroke="#FF4A1C" strokeWidth="2" /><text x={x0 + w / 2} y={y(Df) - 4} textAnchor="middle" className="num" fontSize="9" fill="#FF4A1C">Df</text></g>}
       <text x={x0 + w + 14} y={10} className="hud" fontSize="9" fill="#A88A80">SPT N →</text>
     </svg>
