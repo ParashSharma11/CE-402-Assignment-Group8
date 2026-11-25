@@ -178,7 +178,7 @@ export function Stepper({ steps, current, onSelect }: { steps: string[]; current
 export function StepCard({ step, index }: { step: Step; index: number }) {
   const verify = /TO VERIFY/i.test(step.source);
   return (
-    <motion.div initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-5% 0px' }} transition={{ duration: 0.6, delay: Math.min(index, 8) * 0.06, ease: [0.215, 0.61, 0.355, 1] }}>
+    <motion.div initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.05 }} transition={{ duration: 0.6, delay: Math.min(index, 8) * 0.05, ease: [0.215, 0.61, 0.355, 1] }}>
       <Card className="h-full p-5">
         <div className="mb-3 flex items-start justify-between gap-3">
           <span className="font-mono text-[11px] text-muted">{String(index + 1).padStart(2, '0')}</span>

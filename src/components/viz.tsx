@@ -20,6 +20,9 @@ function Patterns() {
 }
 const patternFor = (l: SoilLayer) => l.behaviour === 'fill' ? 'url(#p-fill)' : l.behaviour === 'cohesive' ? 'url(#p-clay)' : /^G/i.test(l.symbol) ? 'url(#p-gravel)' : 'url(#p-sand)';
 
+/** Smooth geometry changes (y/height are CSS properties for SVG in modern browsers). */
+const GEO = { transition: 'y 0.5s cubic-bezier(.16,1,.3,1), height 0.5s cubic-bezier(.16,1,.3,1)' } as const;
+
 /* ---------------- Soil column (grows layer by layer, WT slides) ---------------- */
 export function SoilColumn({ bh, height = 460, width = 300, Df }: { bh: Borehole; height?: number; width?: number; Df?: number }) {
   const layers = [...bh.layers].sort((a, b) => a.top - b.top);
@@ -35,10 +38,10 @@ export function SoilColumn({ bh, height = 460, width = 300, Df }: { bh: Borehole
       <AnimatePresence initial={true}>
         {layers.map((l, i) => (
           <motion.g key={`${i}-${l.symbol}`} initial={{ opacity: 0, scaleY: 0 }} animate={{ opacity: 1, scaleY: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.6, delay: i * 0.08, ease: [0.215, 0.61, 0.355, 1] }} style={{ transformOrigin: `0px ${y(l.top)}px` }}>
-            <motion.rect x={x0} width={w} rx={3} animate={{ y: y(l.top), height: Math.max(0.5, (l.bottom - l.top) * k) }} transition={{ type: 'spring', stiffness: 160, damping: 22 }} fill={soilColor(l.symbol)} />
-            <motion.rect x={x0} width={w} animate={{ y: y(l.top), height: Math.max(0.5, (l.bottom - l.top) * k) }} transition={{ type: 'spring', stiffness: 160, damping: 22 }} fill={patternFor(l)} />
-            <motion.text x={x0 + w + 14} animate={{ y: y((l.top + l.bottom) / 2) - 2 }} className="num" fontSize="11" fontWeight={600} fill="#F4E8DF">{l.symbol}</motion.text>
-            <motion.text x={x0 + w + 14} animate={{ y: y((l.top + l.bottom) / 2) + 12 }} className="num" fontSize="10" fill="#A88A80">{l.top.toFixed(1)}–{l.bottom.toFixed(1)} m</motion.text>
+            <rect x={x0} width={w} rx={3} y={y(l.top)} height={Math.max(0.5, (l.bottom - l.top) * k)} style={GEO} fill={soilColor(l.symbol)} />
+            <rect x={x0} width={w} y={y(l.top)} height={Math.max(0.5, (l.bottom - l.top) * k)} style={GEO} fill={patternFor(l)} />
+            <text x={x0 + w + 14} y={y((l.top + l.bottom) / 2) - 2} style={GEO} className="num" fontSize="11" fontWeight={600} fill="#F4E8DF">{l.symbol}</text>
+            <text x={x0 + w + 14} y={y((l.top + l.bottom) / 2) + 12} style={GEO} className="num" fontSize="10" fill="#A88A80">{l.top.toFixed(1)}–{l.bottom.toFixed(1)} m</text>
           </motion.g>
         ))}
       </AnimatePresence>
@@ -74,11 +77,11 @@ export function DepthChart({ series, xLabel, zLabel = 'Depth, m', height = 420, 
       {ticks(zm).map((t) => <g key={'z' + t}><path d={`M${L} ${Z(t)}H${W - R}`} stroke="#F4E8DF" strokeOpacity="0.06" /><text x={L - 8} y={Z(t) + 3} textAnchor="end" className="num" fontSize="10" fill="#A88A80">{t}</text></g>)}
       <path d={`M${L} ${T}V${H - B}M${L} ${T}H${W - R}`} stroke="#A88A80" strokeOpacity="0.6" />
       {markers.map((m) => <g key={m.label}><path d={`M${L} ${Z(m.z)}H${W - R}`} stroke={m.color} strokeDasharray="5 4" strokeOpacity="0.8" /><text x={W - R - 4} y={Z(m.z) - 5} textAnchor="end" className="num" fontSize="10" fill={m.color}>{m.label}</text></g>)}
-      {series.map((s) => (
+      {series.map((s) => { const dd = s.pts.map((p, i) => `${i ? 'L' : 'M'}${X(p.x).toFixed(1)} ${Z(p.z).toFixed(1)}`).join(''); return (
         <motion.path key={s.name} fill="none" stroke={s.color} strokeWidth={s.width ?? 2.2} strokeDasharray={s.dash} strokeLinejoin="round"
-          initial={pl({ pathLength: 0 })} animate={pl({ pathLength: 1, d: s.pts.map((p, i) => `${i ? 'L' : 'M'}${X(p.x).toFixed(1)} ${Z(p.z).toFixed(1)}`).join('') })}
+          d={dd} initial={pl({ pathLength: 0, d: dd })} animate={pl({ pathLength: 1, d: dd })}
           transition={{ pathLength: { duration: 1.2, ease: [0.215, 0.61, 0.355, 1] }, d: { duration: 0.5 } }} />
-      ))}
+      ); })}
       <text x={(L + W - R) / 2} y={H - 10} textAnchor="middle" className="hud" fontSize="10" fill="#A88A80">{xLabel}</text>
       <text transform={`translate(14 ${(T + H - B) / 2}) rotate(-90)`} textAnchor="middle" className="hud" fontSize="10" fill="#A88A80">{zLabel}</text>
       <g transform={`translate(${L + 10} ${H - B - 10 - series.length * 16})`}>
@@ -134,15 +137,15 @@ export function PressureBulb({ B, L, q, levels = [0.8, 0.6, 0.4, 0.2, 0.1] }: { 
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="Pressure bulb">
       <path d={`M0 ${top}H${W}`} stroke="#F4E8DF" strokeOpacity="0.5" />
       <rect x={cx - (B / 2) * k} y={top - 10} width={B * k} height={10} fill="#F4E8DF" />
-      {contours.map(({ lv, d }, i) => (
+      {contours.filter((c) => c.d).map(({ lv, d }, i) => (
         <motion.path key={lv} d={d} fill="none" stroke="#FF4A1C" strokeOpacity={1 - i * 0.15} strokeWidth={1.6} strokeDasharray={i > 2 ? '6 4' : undefined}
-          initial={pl({ pathLength: 0, scale: 0.6 })} animate={pl({ pathLength: 1, scale: 1, d })} transition={{ duration: 0.9, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }} style={{ transformOrigin: `${cx}px ${top}px` }} />
+          initial={pl({ pathLength: 0, scale: 0.6, d })} animate={pl({ pathLength: 1, scale: 1, d })} transition={{ duration: 0.9, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }} style={{ transformOrigin: `${cx}px ${top}px` }} />
       ))}
       {contours.map(({ lv }, i) => {
         const z = [0.38, 0.75, 1.15, 1.45, 2.0][i] ?? 1;
         return <text key={'t' + lv} x={cx + 6} y={top + z * B * k} className="num" fontSize="11" fill="#FF4A1C">{lv}q = {(lv * q).toFixed(0)} kPa</text>;
       })}
-      {[1, 2, 3, 4].map((m) => <text key={m} x={8} y={top + m * B * k} className="num" fontSize="10" fill="#A88A80">{m}B</text>)}
+      {[1, 2, 3, 4].map((m) => <text key={m} x={8} y={top + m * B * k} className="num" fontSize="10" fill="#A88A80">{m}·B</text>)}
     </svg>
   );
 }
@@ -230,8 +233,8 @@ export function FootingSection({ B, Df, zw, label }: { B: number; Df: number; zw
       {zw < Df + 3 && <path d={`M0 ${gy + zw * k}H${W}`} stroke="#6CC4D6" strokeDasharray="6 4" />}
       <path d={`M${cx - (B * k) / 2} ${fy + 26}H${cx + (B * k) / 2}M${cx - (B * k) / 2} ${fy + 20}v12M${cx + (B * k) / 2} ${fy + 20}v12`} stroke="#FF4A1C" />
       <text x={cx} y={fy + 44} textAnchor="middle" className="num" fontSize="12" fill="#FF4A1C">B = {B.toFixed(2)} m</text>
-      <path d={`M${cx - (B * k) / 2 - 30} ${gy}V${fy}M${cx - (B * k) / 2 - 36} ${gy}h12M${cx - (B * k) / 2 - 36} ${fy}h12`} stroke="#FF4A1C" />
-      <text x={cx - (B * k) / 2 - 40} y={(gy + fy) / 2 + 4} textAnchor="end" className="num" fontSize="12" fill="#FF4A1C">Df = {Df.toFixed(2)} m</text>
+      <path d={`M24 ${gy}V${fy}M18 ${gy}h12M18 ${fy}H${cx - (B * k) / 2}`} stroke="#FF4A1C" strokeOpacity="0.85" />
+      <text x={32} y={(gy + fy) / 2 + 4} className="num" fontSize="12" fill="#FF4A1C">Df = {Df.toFixed(2)} m</text>
       <text x={12} y={24} className="hud" fontSize="10" fill="#A88A80">section {label}</text>
     </svg>
   );

@@ -41,7 +41,7 @@ function Core({ ready }: { ready: boolean }) {
   const reduce = useReducedMotion();
   const coreY = useTransform(scrollY, [0, 800], [0, -60]);
   const [hz, setHz] = useState<number | null>(null);
-  const W = 760, H = 640, cx = 380, rw = 78, ry = 17, top = 150, k = 360 / 15;
+  const W = 820, H = 640, cx = 380, rw = 78, ry = 17, top = 150, k = 360 / 15;
   const onMove = (e: MouseEvent<SVGSVGElement>) => {
     const r = ref.current!.getBoundingClientRect();
     const y = ((e.clientY - r.top) / r.height) * H;
@@ -96,10 +96,10 @@ function Core({ ready }: { ready: boolean }) {
       <text x={cx + 150} y={wy + 46} className="num" fontSize="10" fill="#6CC4D6">▽ WT 2.60 m</text>
       <text x={cx + 70} y={top - 46} className="num" fontSize="10" fill="#F4E8DF">FOOTING · Df 1.50 m</text>
       {/* depth ruler */}
-      <path d={`M740 ${top}V${top + 15 * k}`} stroke="#F4E8DF" strokeOpacity="0.5" />
-      {Array.from({ length: 16 }, (_, d) => <path key={d} d={`M740 ${top + d * k}h${d % 5 ? -6 : -12}`} stroke="#F4E8DF" strokeOpacity="0.5" />)}
-      <text x={724} y={top - 10} textAnchor="end" className="num" fontSize="9" fill="#A88A80">0 m</text>
-      <text x={724} y={top + 15 * k + 14} textAnchor="end" className="num" fontSize="9" fill="#A88A80">15 m</text>
+      <path d={`M806 ${top}V${top + 15 * k}`} stroke="#F4E8DF" strokeOpacity="0.5" />
+      {Array.from({ length: 16 }, (_, d) => <path key={d} d={`M806 ${top + d * k}h${d % 5 ? -6 : -12}`} stroke="#F4E8DF" strokeOpacity="0.5" />)}
+      <text x={792} y={top - 10} textAnchor="end" className="num" fontSize="9" fill="#A88A80">0 m</text>
+      <text x={792} y={top + 15 * k + 14} textAnchor="end" className="num" fontSize="9" fill="#A88A80">15 m</text>
       {/* crosshair readout */}
       {hz !== null && stratum && (
         <g pointerEvents="none">
@@ -116,7 +116,7 @@ function GiantWord({ ready }: { ready: boolean }) {
   const { scrollY } = useScroll();
   const y = useTransform(scrollY, [0, 700], [0, -120]);
   return (
-    <motion.div style={{ y }} className="pointer-events-none relative -mt-[6vw] select-none overflow-hidden" aria-hidden>
+    <motion.div style={{ y }} className="pointer-events-none relative mt-6 select-none overflow-hidden" aria-hidden>
       <div className="flex justify-between font-giant text-[21.5vw] leading-[0.8] tracking-[-0.01em] text-ink">
         {'GEOFOUND'.split('').map((ch, i) => (
           <motion.span key={i} initial={{ y: '100%' }} animate={{ y: ready ? '0%' : '100%' }} transition={{ duration: 1, delay: 0.5 + i * 0.06, ease: [0.16, 1, 0.3, 1] }}>{ch}</motion.span>
@@ -140,12 +140,12 @@ export default function Landing({ ready }: { ready: boolean }) {
   return (
     <Page>
       <section className="stripes relative overflow-hidden">
-        <div className="mx-auto grid max-w-[1440px] grid-cols-1 items-center gap-6 px-4 pt-10 sm:px-8 lg:grid-cols-[1fr_1.15fr] lg:pt-16">
+        <div className="mx-auto grid max-w-[1440px] grid-cols-1 items-center gap-6 px-4 pt-10 sm:px-8 lg:grid-cols-[1.05fr_1fr] lg:pt-16">
           <div className="relative z-10">
             <div className="hud mb-8 flex justify-between lg:block"><span>Site · any terrace, any profile</span><span className="lg:hidden">SI units</span></div>
             <div className="hud mb-5 flex items-center gap-2 text-accent"><span className="h-1.5 w-1.5 rounded-full bg-accent" />live ground model</div>
-            {ready && <LiquidTitle lines={['Foundation design,', 'read from the', 'ground up.']} className="font-display text-[clamp(44px,6.2vw,92px)] font-extrabold leading-[0.95] tracking-[-0.045em] text-ink" />}
-            {!ready && <h1 className="font-display text-[clamp(44px,6.2vw,92px)] font-extrabold leading-[0.95] tracking-[-0.045em] text-transparent">Foundation design, read from the ground up.</h1>}
+            {ready && <LiquidTitle lines={['Foundation design,', 'read from the', 'ground up.']} className="font-display text-[clamp(42px,5.4vw,84px)] font-extrabold leading-[0.95] tracking-[-0.045em] text-ink" />}
+            {!ready && <h1 className="font-display text-[clamp(42px,5.4vw,84px)] font-extrabold leading-[0.95] tracking-[-0.045em] text-transparent">Foundation design, read from the ground up.</h1>}
             <Reveal delay={1.2} className="mt-7 max-w-[30rem] text-[18px] leading-[1.6] text-warm" as="p">
               Enter boreholes, water levels and lab sheets. GeoFound builds the ground model and checks bearing capacity and settlement to IS 6403 and IS 1904 — live, with every factor and clause on screen.
             </Reveal>

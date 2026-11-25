@@ -21,7 +21,11 @@ for (const [label, vp] of [['desktop', { width: 1440, height: 900 }], ['mobile',
   await page.waitForTimeout(1200);
   for (const r of (label === 'mobile' ? ['/', '/data'] : routes)) {
     await page.goto(base + r, { waitUntil: 'networkidle' });
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(800);
+    // scroll through so reveal-on-scroll content is triggered, then back to top
+    for (let y = 0; y < 8000; y += 500) { await page.mouse.wheel(0, 500); await page.waitForTimeout(60); }
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(900);
     await page.screenshot({ path: `${out}/${label}${r === '/' ? '-landing' : r.replace('/', '-')}.png`, fullPage: r !== '/' });
   }
   console.log(label, errors.length ? 'ERRORS:\n' + [...new Set(errors)].join('\n') : 'no console errors');
