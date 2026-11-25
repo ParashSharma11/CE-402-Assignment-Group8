@@ -3,6 +3,7 @@ import { Route, Routes, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { Footer, Grain, Loader, Nav, SmoothScroll } from './components/layout';
 import Landing from './pages/Landing';
+import ShaderBackdrop from './components/ShaderBackdrop';
 
 const Data = lazy(() => import('./pages/Data'));
 const Ground = lazy(() => import('./pages/Ground'));
@@ -21,6 +22,12 @@ export default function App() {
     <>
       <AnimatePresence>{loading && <Loader key="loader" onDone={done} />}</AnimatePresence>
       <SmoothScroll />
+      {loc.pathname !== '/' && (
+        <div aria-hidden className="no-print pointer-events-none fixed inset-0 -z-10">
+          <ShaderBackdrop tone={0.6} scale={0.4} className="opacity-80" />
+          <div className="absolute inset-0 bg-gradient-to-b from-ground/30 via-transparent to-ground/60" />
+        </div>
+      )}
       <Grain />
       <Nav />
       <Suspense fallback={<div className="hud grid min-h-[60vh] place-items-center">loading…</div>}>

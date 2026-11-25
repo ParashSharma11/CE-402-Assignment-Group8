@@ -56,7 +56,8 @@
 
 html { background: var(--color-ground); color-scheme: dark; }
 body {
-  background: var(--color-ground);
+  /* transparent so the fixed live backdrop (z-index −10) shows; html keeps the ground colour */
+  background: transparent;
   color: var(--color-ink);
   font-family: var(--font-sans);
   font-feature-settings: "ss01", "ss02";
