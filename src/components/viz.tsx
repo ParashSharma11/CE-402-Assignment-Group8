@@ -128,10 +128,10 @@ export function PressureBulb({ B, L, q, levels = [0.8, 0.6, 0.4, 0.2, 0.1] }: { 
       for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (f(m) > 0) lo = m; else hi = m; }
       pts.push([lo, z]);
     }
-    if (!pts.length) return { lv, d: '' };
+    if (!pts.length) return { lv, d: '', zEnd: 0 };
     const right = pts.map(([x, z]) => `${(cx + x * k).toFixed(1)} ${(top + z * k).toFixed(1)}`);
     const left = [...pts].reverse().map(([x, z]) => `${(cx - x * k).toFixed(1)} ${(top + z * k).toFixed(1)}`);
-    return { lv, d: `M${left.join('L')}L${right.join('L')}` };
+    return { lv, d: `M${left.join('L')}L${right.join('L')}`, zEnd: pts[pts.length - 1][1] };
   }), [B, L, levels, k, cx]);
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="Pressure bulb">
@@ -141,10 +141,10 @@ export function PressureBulb({ B, L, q, levels = [0.8, 0.6, 0.4, 0.2, 0.1] }: { 
         <motion.path key={lv} d={d} fill="none" stroke="#FF4A1C" strokeOpacity={1 - i * 0.15} strokeWidth={1.6} strokeDasharray={i > 2 ? '6 4' : undefined}
           initial={pl({ pathLength: 0, scale: 0.6, d })} animate={pl({ pathLength: 1, scale: 1, d })} transition={{ duration: 0.9, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }} style={{ transformOrigin: `${cx}px ${top}px` }} />
       ))}
-      {contours.map(({ lv }, i) => {
-        const z = [0.38, 0.75, 1.15, 1.45, 2.0][i] ?? 1;
-        return <text key={'t' + lv} x={cx + 6} y={top + z * B * k} className="num" fontSize="11" fill="#FF4A1C">{lv}q = {(lv * q).toFixed(0)} kPa</text>;
-      })}
+      {/* each label sits just below the deepest point of its own computed isobar */}
+      {contours.filter((c) => c.d).map(({ lv, zEnd }) => (
+        <text key={'t' + lv} x={cx} y={top + zEnd * k + 13} textAnchor="middle" className="num" fontSize="10.5" fill="#FF4A1C" paintOrder="stroke" stroke="#140806" strokeWidth={3}>{lv}q = {(lv * q).toFixed(0)} kPa · {zEnd.toFixed(2)} m</text>
+      ))}
       {[1, 2, 3, 4].map((m) => <text key={m} x={8} y={top + m * B * k} className="num" fontSize="10" fill="#A88A80">{m}·B</text>)}
     </svg>
   );

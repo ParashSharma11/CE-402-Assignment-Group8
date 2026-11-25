@@ -135,6 +135,13 @@ export function computeResults(s: ProjectState): ProjectResults {
     }
   }
   const nFail = failing.length;
+  // Geometric check: adjacent isolated footings must not touch (B along x, L along y on the plan).
+  const clear = 0.3; // m, minimum clear gap between footing edges — ASSUMED construction clearance
+  const overlaps = colResults.filter((r) => r.check && (r.check.footing.B > s.building.sx - clear || (r.check.footing.L ?? r.check.footing.B) > s.building.sy - clear));
+  if (overlaps.length) {
+    const worst = overlaps.reduce((m, r) => (r.check!.footing.B > m.check!.footing.B ? r : m));
+    checks.push({ name: `Footing overlap (${overlaps.length} columns, e.g. ${worst.col.id})`, value: fmt(worst.check!.footing.B, 2), unit: 'm', limit: `≤ spacing − ${clear} m = ${fmt(Math.min(s.building.sx, s.building.sy) - clear, 2)} m`, clause: 'geometry — isolated footings must not touch', status: 'fail' });
+  }
   checks.push({ name: 'Columns with a valid isolated footing', value: columns.length - nFail, unit: `of ${columns.length}`, limit: `all ${columns.length}`, clause: 'IS 6403 + IS 1904', status: nFail ? 'fail' : 'pass' });
 
   /* Assumptions */
@@ -155,7 +162,9 @@ export function computeResults(s: ProjectState): ProjectResults {
     ? raft && raft.sCentre > lim.maxTotal
       ? `Isolated footings fail in ${failZones.join(', ')}; a raft there settles ≈ ${raft.sCentre.toFixed(0)} mm, also above ${lim.maxTotal} mm. Propose bored piles socketed into the very dense gravel stratum below the clay for those grid lines, with the remaining lines on isolated footings (check differential movement at the interface).`
       : `Isolated footings fail in ${failZones.join(', ')}; a raft over the footprint (net ${raft?.qn.toFixed(0)} kPa) is the first alternative to check.`
-    : 'Isolated footings satisfy bearing and settlement everywhere.';
+    : overlaps.length
+      ? `Isolated footings pass bearing and settlement but ${overlaps.length} would overlap their neighbours; use combined or strip footings for those columns.`
+      : 'Isolated footings satisfy bearing and settlement everywhere.';
 
   return {
     lambda, columns, colResults, perBH, lab: { shear, uu, oed, labErrors }, building, raft, checks, assumptions,
