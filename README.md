@@ -1,5 +1,9 @@
 # CE-402 Assignment — Group 8 · GeoFound
 
+[![GeoFound — home page; click the soil core to separate it layer by layer](docs/images/hero.jpg)](https://geofound.vercel.app)
+
+<p align="center"><b><a href="https://geofound.vercel.app">Open the live app →</a></b></p>
+
 Foundation design in the browser for the CE 402 (Geotechnical Engineering, IIT Mandi) assignment. Enter a site
 (boreholes, lab results, column grid and loads) and GeoFound works through the whole design, showing every equation
 with its substituted values and its source:
@@ -22,6 +26,18 @@ Isolated footings were tried first but, once the pressure bulbs of neighbouring 
 clay, they settle up to 114 mm (limit 50 mm); BH-3 also has liquefiable sand. **Recommended: Ø0.5 m bored piles under
 every column, socketed into the dense gravel (2–4 piles per column), maximum settlement 13.1 mm — every check passes.**
 Full numbers: [docs/DESIGN_SUMMARY.md](docs/DESIGN_SUMMARY.md).
+
+![Design page — final foundation, checks and design decision](docs/images/design.jpg)
+
+![3D frame on piles, coloured by settlement, with the soil layers below](docs/images/design-3d.jpg)
+
+## Screens
+| | |
+|---|---|
+| ![Ground model — strata correlated across BH-2, BH-1, BH-3 with water tables](docs/images/ground.jpg) | ![Calculations — quick calculator, IS 6403 factors and pressure bulb](docs/images/calculations.jpg) |
+| **Ground** — strata correlated across the boreholes, design and measured water tables, SPT and liquefaction tables | **Calculations** — every equation with substituted numbers and its clause; live pressure bulb |
+| ![Data entry — step-by-step wizard with SI units on every input](docs/images/data.jpg) | ![Summary — AI summary and checks against code limits](docs/images/summary.jpg) |
+| **Data** — step-by-step entry (or CSV / JSON import), SI unit beside every input | **Summary** — checks against IS limits, assumptions, AI-written summary with a number check |
 
 ## Using the app
 1. **Home → "Open Mandi example"**, or go to **Data** and enter your own site:
