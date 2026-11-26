@@ -1,71 +1,97 @@
 # CE-402 Assignment — Group 8 · GeoFound
 
-Shallow-foundation design in the browser for the CE 402 (Geotechnical Engineering, IIT Mandi) assignment:
-IS 2131 SPT corrections, direct-shear least squares, IS 6403:1981 bearing capacity, Boussinesq / 2:1 stress increase,
-Schmertmann (1978) and 1-D consolidation settlement, and IS 1904 building checks — every equation with its source.
+Foundation design in the browser for the CE 402 (Geotechnical Engineering, IIT Mandi) assignment. Enter a site
+(boreholes, lab results, column grid and loads) and GeoFound works through the whole design, showing every equation
+with its substituted values and its source:
 
-**Live app (v2):** _Vercel URL — added after deployment_
-**v1 platform:** https://parashsharma11.github.io/CE-402-Assignment-Group8/ (GitHub Pages, from `main`)
+- **P1** soil profile and stresses for the design and measured water tables
+- **P2** IS 2131 SPT corrections; direct-shear least squares (c′, φ′); UU cu; oedometer Cc, Cr, σ′p, OCR, cv
+- **P3** IS 6403:1981 bearing capacity (general / local shear, shape, depth, inclination, W′, effective area)
+- **P4** stress increase: Boussinesq (centre, corner, superposition) and 2:1
+- **P5** Schmertmann (1978) settlement, 1-D consolidation (sublayers ≤ 0.5 m), time–settlement
+- **Seismic** liquefaction check from SPT (IS 1893 (Part 1):2016 Annex F), seismic zone II–V as an input
+- **Design** isolated footings proportioned for equal settlement, with the stress from neighbouring footings included;
+  IS 1904 total / differential / angular checks; IS 2911 bored piles where footings fail
+- **Summary** check table, assumptions table, AI-written summary (Gemini free tier), PDF / JSON / CSV export
+
+**Live app:** https://geofound.vercel.app
+**v1 platform (earlier version):** https://parashsharma11.github.io/CE-402-Assignment-Group8/ (GitHub Pages, branch `main`)
+
+## Result for the Mandi site
+Isolated footings were tried first but, once the pressure bulbs of neighbouring footings are superposed in the CI
+clay, they settle up to 114 mm (limit 50 mm); BH-3 also has liquefiable sand. **Recommended: Ø0.5 m bored piles under
+every column, socketed into the dense gravel (2–4 piles per column), maximum settlement 13.1 mm — every check passes.**
+Full numbers: [docs/DESIGN_SUMMARY.md](docs/DESIGN_SUMMARY.md).
+
+## Using the app
+1. **Home → "Open Mandi example"**, or go to **Data** and enter your own site:
+   project and group number (λ = 1 + g/100), founding depth, seismic zone, boreholes (layers, SPT, water tables),
+   lab results, column grid and loads.
+2. Boreholes can be **imported from CSV** (Data → "Download template", fill it in, "Import CSV"). The whole project
+   can be saved and reopened as JSON.
+3. **Ground** — profile, stress plots, SPT corrections, liquefaction table, pressure bulb.
+   **Calculations** — every module step by step, plus the team-engine cross-check.
+   **Design** — final foundation, pile design, isolated-footing trial, raft check, 3D view.
+   **Summary** — checks, assumptions, AI summary, downloads.
+
+## Run locally
+Node 20+.
+```bash
+npm install
+npm run dev        # http://localhost:5173
+npm test           # 59 tests: hand-calculation benchmarks, v1 cross-checks, full design run
+npm run build      # type-check + production build
+```
+The AI summary needs `GEMINI_API_KEY` (Google AI Studio, free tier) as a Vercel environment variable; without it the
+Summary page uses a deterministic template. v1 needs no build: open `platform-v1/index.html`.
 
 ## Two versions, one team
 | | v1 — GeoTech Analytics | v2 — GeoFound |
 |---|---|---|
-| Where | `platform-v1/` | repo root (`src/`, `api/`, `tests/`) |
-| Stack | Vanilla JS, Tailwind, Plotly (no build step) | React + TypeScript (Vite), Vitest, Vercel |
-| Engines | P1–P5 by the team (below) | own TypeScript engine **plus the v1 engines, run live as a cross-check** |
+| Where | `platform-v1/` | repo root |
+| Stack | Vanilla JS, Tailwind, Plotly | React + TypeScript (Vite), Vitest, Vercel |
+| Engines | P1–P5 by the team | own TypeScript engine **plus the v1 engines, run live as a cross-check** |
 
-The project began as a Python/Streamlit prototype (17–18 Nov), moved to the client-side v1 platform (21 Nov), and v2
-was added on 26 Nov. v2 does not replace the team's engines — it calls them: `src/team/bridge.ts` loads
-`platform-v1/js/*_logic.js` unchanged, the Calculations screen shows "Team engine cross-check", and
-`tests/crosscheck.test.ts` checks that the two implementations agree.
+`src/team/bridge.ts` loads `platform-v1/js/*_logic.js` unchanged; the Calculations screen shows both results side by
+side and `tests/crosscheck.test.ts` checks they agree.
 
-| Module | v1 engine author | v1 ↔ v2 |
-|---|---|---|
-| P1 Soil profile | Parash Sharma | v1 validates every v2 profile |
-| P2 SPT + direct shear | Parash Sharma | identical (v2 corrected to match v1 — see `docs/AI_AUDIT.md`) |
-| P3 Bearing capacity (IS 6403) | Gaurav Dtyal | identical with the team method (default) |
-| P4 Stress increase | Namit Mehta | identical |
-| P5 Settlement | Muvan | U(Tv) identical |
-
-## Run v2 locally
-Node 20+.
-```bash
-npm install
-npm run dev        # http://localhost:5173 → "Open Mandi example"
-npm test           # hand-calculation benchmarks, v1 cross-checks, end-to-end design run
-npm run build      # type-check + production build
-```
-v1 needs no build: open `platform-v1/index.html` in a browser.
-
-The AI summary on v2's Summary page uses the Google Gemini free tier through a server function (`api/summary.ts`,
-key in the Vercel environment variable `GEMINI_API_KEY`). Without a key it falls back to a deterministic template.
-
-## Structure
+## Repository layout
 ```text
-├── src/engine/          v2 calculation engine (pure TypeScript, // SOURCE: on every equation)
-├── src/examples/        Mandi site data — the only place site values live
-├── src/team/            bridge to the v1 engines
-├── src/pages, components   v2 screens (UI: Harshit Pandey)
-├── api/summary.ts       AI summary (server-side key)
-├── tests/               Vitest + tests/hand_calcs.md (every benchmark derived by hand)
-├── platform-v1/         the team's v1 platform, unchanged, with full history
-├── docs/AI_AUDIT.md     AI errors we caught (max two pages)
-├── docs/team/           one task file per member
-├── AI_LOG.md            AI use log
-└── REFERENCES.md        every source cited in the code
+src/
+  engine/          calculation engine — pure TypeScript, a // SOURCE: comment on every equation
+    stress, spt, labTests, bearing, stressIncrease, settlement   P1–P5
+    liquefaction   IS 1893 Annex F         design     footing checks, IS 1904
+    piles          IS 2911 bored piles     finalDesign whole-building decision
+  examples/mandi.ts  the Mandi site data — the only place site values live
+  team/            bridge to the v1 engines
+  lib/             results pipeline, CSV import/export, AI-summary prompt
+  store/, hooks/   project state (saved in the browser)
+  pages/, components/   screens and UI
+api/summary.ts     AI summary server function (key stays on the server)
+tests/             Vitest + hand_calcs.md (every benchmark worked by hand)
+platform-v1/       the team's v1 platform, unchanged, with its history
+docs/
+  DESIGN_SUMMARY.md  results for the report
+  AI_AUDIT.md        errors in AI output that we caught and fixed
+  team/              one task file per member
+AI_LOG.md          AI use log, per session
+REFERENCES.md      every code, paper and book cited in the engine
+CLAUDE.md          project rules for the AI assistant
+scripts/           Playwright screenshot / walkthrough scripts
 ```
 
-## Engineering standards
-SI units throughout (kN, kPa, m, mm, kN/m³); γw = 9.81 kN/m³; nothing site-specific hard-coded outside
-`src/examples/`; every clause not yet checked against the code text is marked **TO VERIFY** (amber in the app).
+## Engineering conventions
+SI units throughout (kN, kPa, m, mm, kN/m³), γw = 9.81 kN/m³. Nothing site-specific outside `src/examples/`.
+Every clause not yet checked against the code text is marked **TO VERIFY** (amber chip in the app); every value not in
+the brief is marked **ASSUMED** with its reason.
 
 ## Team (Group 8)
 | Member | Contribution |
 |---|---|
-| **Harshit Pandey** | UI/UX design and front-end of GeoFound (v2); **foundation design** — equal-settlement footing sizing and IS 1904 building checks (`src/engine/design.ts`, `finalDesign.ts`), IS 2911 pile alternative (`src/engine/piles.ts`), oedometer and UU interpretation (`labTests.ts`); integration of the team engines; deployment |
-| **Parash Sharma** | P1 soil profile and P2 SPT / direct-shear engines, v1 platform architecture |
+| **Harshit Pandey** | GeoFound (v2) UI/UX and front-end; foundation design — final design and IS 1904 checks (`finalDesign.ts`, `design.ts`), IS 2911 piles (`piles.ts`), liquefaction (`liquefaction.ts`), oedometer and UU interpretation (`labTests.ts`); integration of the team engines; deployment |
+| **Parash Sharma** | P1 soil profile and P2 SPT / direct-shear engines; v1 platform architecture |
 | **Gaurav Dtyal** | P3 IS 6403 bearing-capacity engine |
 | **Muvan** | P5 settlement engine (IS 8009, Schmertmann, consolidation) |
 | **Namit Mehta** | P4 stress-increase (Boussinesq / 2:1) module |
 
-See `docs/team/` for each member's verification task.
+Each member's verification task is in [docs/team/](docs/team/README.md).

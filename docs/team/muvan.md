@@ -13,7 +13,7 @@ sentence in the report on why the assignment's Schmertmann (1978) method was use
 | Cc = 0.009(LL − 10) for BH-2, BH-3 | Skempton (1944) | confirm applicability (NC, low sensitivity) |
 
 ## 2. Hand calculation → test
-Work the consolidation settlement of one 0.5 m sublayer of BH-3 clay under B6 by hand (σ′0, Δσ, e0, Cc) and add it to
+Work the consolidation settlement of one 0.5 m sublayer of BH-1 clay under the B3 trial footing by hand (σ′0 with the October WT 2.6 m, Δσ, σ′p = 114.6 kPa, e0, Cc, Cr — NC/OC case) and add it to
 `tests/hand_calcs.md` §9 plus a test using `sublayerSettlement` in `tests/engine.test.ts`.
 
 ## 3. Optional cross-check

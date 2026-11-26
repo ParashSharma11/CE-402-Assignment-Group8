@@ -9,3 +9,6 @@ dist
 *.webm
 .env*
 tsconfig.tsbuildinfo
+
+# local tool config
+.mcp.json

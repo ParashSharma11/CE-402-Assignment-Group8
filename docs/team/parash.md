@@ -13,7 +13,7 @@ see `docs/AI_AUDIT.md` item 5. v2 now matches your engine exactly (`tests/crossc
 | Corrections only for cohesionless soil | "IS 2131:1981" | used in code | clause wording |
 
 ## 2. Hand calculation → test
-Add one SPT row of your choice (e.g. BH-2, N = 26 at 4.5 m, design WT 1.7 m) to `tests/hand_calcs.md` §9 with σ′v, CN,
+Add one SPT row of your choice (e.g. BH-2, N = 26 at 4.5 m, WT at test time 3.2 m — corrections use the October WT, see `docs/AI_AUDIT.md` item 9) to `tests/hand_calcs.md` §9 with σ′v, CN,
 N′, N″ worked by hand, then add a matching `it(...)` in `tests/engine.test.ts` (copy the §3 test pattern).
 
 ## 3. Commit

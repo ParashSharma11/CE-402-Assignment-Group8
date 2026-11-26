@@ -43,3 +43,43 @@ Errors found in AI output are written up in `docs/AI_AUDIT.md`.
 
 ### Still to do (next session)
 Deploy to Vercel from the team repository; verify TO VERIFY clauses and the IS 1904 limits; add group hand calculations; every member commits.
+
+---
+
+## Session 2 — 26 Nov 2026 (afternoon / evening)
+
+**Member.** Harshit Pandey.
+**Tool.** Claude Code (Claude Opus 5.5) in VS Code; Vercel CLI; Playwright.
+**Purpose.** Deploy, integrate the team repo, fix the design, and check the engine against the problem statement.
+
+### Key prompts (verbatim)
+1. "there are many things i want to point out that site link is working properly but when i am clicking it is not going to home page … also i am thinking that for the new site data whether a user can enter it or upload the csv file for that"
+2. "i think design is wrong cause every column is failed check again and correct it cause it's a design problem so i need to design it and make it work"
+3. "also i have added the gemini api key to the vercel so integrate it now"
+4. "one thing i want to point out is that it uses M25 but for Mandi isn't it wrong cause mandi is in severe exposure ??"
+5. "check the calculation with this question" *(pasted the full problem statement)*
+6. *(Pasted an independent review of the AI's check: liquefaction, test-time WT, c′ = 0, C4 load, footing overlap, pile critical depth, cv)*
+7. "can a person gives the input about seismic zone ??"
+8. "now let's organize the whole thing"
+
+### Accepted
+- **Deployment** at https://geofound.vercel.app (Vercel), Gemini key as a Vercel secret (`GEMINI_API_KEY`) — never pasted in chat.
+- **Final design module**, then the **review fixes** (AI audit items 8–12): liquefaction module, test-time water table,
+  design c′ = 0, neighbouring-footing superposition, downdrag and moment in pile groups, C4 orientation, critical depth
+  from ground level. Accepted after hand checks (tests/hand_calcs.md §L–N) — 59 tests pass.
+- **Seismic zone input** (II–V dropdown, Z and amax editable).
+
+### Changed
+- **Concrete M25 → M30** after the member pointed out severe exposure (AI audit item 7).
+- **Recommendation changed** from "footings on lines 1–5 + piles on 6–7 + movement joint" to **piles under every
+  column**, because the overlap of neighbouring pressure bulbs in the clay makes footings settle up to 114 mm.
+- **cv note:** the AI first called cv = 1.99 m²/yr conservative; the reviewer showed it is the accurate increment.
+
+### Rejected
+- **qnu ≈ 342 kPa for A3** from the review — it uses the founding-layer φ only; the team method (shear-zone average)
+  is kept and both options remain in the app.
+- **Fast-forwarding `main`** without the owner's agreement — left for the repository owner to decide.
+
+### Still to do
+C4's assigned P and M; confirm amax in IS 1893 Annex F and the edition; every TO VERIFY clause; each member commits.
+

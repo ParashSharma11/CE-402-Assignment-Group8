@@ -39,6 +39,10 @@ alternative foundation where isolated footings fail.
 - Design WT (seasonal high, August) ≠ measured WT (24 h after boring).
 - BH-3 clay has no consolidation test → Cc must come from a cited correlation.
 - BH-1 SPT at 9.0 m hit a cobble (N = 22) → not representative of the clay.
+- SPT corrections and σ′v0/OCR use the WT at the time of the test (measured, Oct); bearing, W′, Schmertmann and CSR use
+  the design (Aug) WT.
+- Non-plastic sand: report the least-squares c′ but design with c′ = 0.
+- Seismic zone V and a stream 25 m away → liquefaction check; footings on a 5 m grid → superpose neighbouring bulbs.
 
 ## 5. Engine layout — `src/engine/` (pure TypeScript, no React, no DOM)
 ```
@@ -52,6 +56,9 @@ src/engine/
   stressIncrease.ts   P4  Boussinesq corner/centre (Newmark), 2:1, Δσz profiles
   settlement.ts       P5  Schmertmann 1978, consolidation (≤ 0.5 m sublayers), Terzaghi U(Tv), time–settlement
   design.ts           footing sizing per column, differential settlement, angular distortion, checks vs limits
+  liquefaction.ts     IS 1893 Annex F simplified SPT procedure (Youd et al. 2001); zone ↔ Z table
+  piles.ts            IS 2911 bored piles: Qb + Qs, downdrag in liquefiable layers, moment in the group, settlement
+  finalDesign.ts      whole-building decision: equal-settlement footings incl. neighbouring-footing stress, else piles
   trace.ts            Step type: { title, equation, substituted, result, unit, source } — every module returns steps
   index.ts            public API
 src/examples/         Mandi site data (boreholes, lab sheets, grid, loads) — the ONLY place site values live

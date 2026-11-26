@@ -13,7 +13,7 @@ review your module) and ends in **a commit from your own GitHub account**, which
 | Gaurav Dtyal | P3 IS 6403 bearing capacity | [gaurav.md](gaurav.md) |
 | Muvan | P5 settlement engine (IS 8009, Schmertmann, consolidation) | [muvan.md](muvan.md) |
 | Namit Mehta | P4 stress increase | [namit.md](namit.md) |
-| Harshit Pandey | GeoFound UI/UX and front-end, integration, deployment, docs | [harshit.md](harshit.md) |
+| Harshit Pandey | GeoFound UI/UX and front-end; final design, piles, liquefaction; integration, deployment | [harshit.md](harshit.md) |
 
 ## Setup (once, ~5 min)
 ```bash
@@ -34,7 +34,9 @@ git add <the files you changed>
 git commit -m "P3: verify IS 6403 clause numbers and add group hand calculation (Gaurav)"
 git push
 ```
-Do not push to `main`. When everyone is done, Harshit opens a pull request `geofound → main`.
+Do not push to `main`. `geofound` is the working branch (the owner can make it the default branch).
+
+The current results for the report are in [../DESIGN_SUMMARY.md](../DESIGN_SUMMARY.md).
 
 ## Rules
 - Every equation keeps a `// SOURCE:` comment. Replace `TO VERIFY` only after you have checked the code text
