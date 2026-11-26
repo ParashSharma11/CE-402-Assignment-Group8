@@ -4,7 +4,7 @@
  * On any failure (no key, quota 429, network) the client falls back to the deterministic template.
  */
 import { GoogleGenAI } from '@google/genai';
-import { SYSTEM_PROMPT, type SummaryPayload } from '../src/lib/summaryPrompt';
+import { SYSTEM_PROMPT, type SummaryPayload } from '../src/lib/summaryPrompt.js';
 
 interface Req { method?: string; body?: unknown; headers: Record<string, string | string[] | undefined>; socket?: { remoteAddress?: string } }
 interface Res { status: (c: number) => Res; setHeader: (k: string, v: string) => void; write: (s: string) => void; end: (s?: string) => void; json: (o: unknown) => void }
