@@ -20,7 +20,7 @@ import { step, n, type Step } from './trace';
 import type { Borehole } from './types';
 
 export interface LiquefactionOptions {
-  /** Peak horizontal ground acceleration as a fraction of g. Default Z/2 = 0.18 for zone V — TO VERIFY. */
+  /** Peak horizontal ground acceleration as a fraction of g. Default Z/2 (design basis earthquake) — TO VERIFY. */
   amax: number;
   /** Design earthquake magnitude Mw. Default 7.5 (MSF = 1) — TO VERIFY. */
   Mw: number;
@@ -48,6 +48,19 @@ export interface LiqResult {
 }
 
 const SRC = 'Youd et al. (2001); IS 1893 (Part 1):2016 Annex F — TO VERIFY';
+
+/** Seismic zones and zone factors Z. SOURCE: IS 1893 (Part 1):2016 Table 3. */
+export const SEISMIC_ZONES = [
+  { zone: 'II', Z: 0.10 },
+  { zone: 'III', Z: 0.16 },
+  { zone: 'IV', Z: 0.24 },
+  { zone: 'V', Z: 0.36 },
+] as const;
+
+/** Zone name for a zone factor, or null if Z is not one of the Table 3 values (custom input). */
+export const zoneOfZ = (Z: number): string | null => SEISMIC_ZONES.find((z) => Math.abs(z.Z - Z) < 1e-9)?.zone ?? null;
+export const zoneLabel = (Z: number): string => { const z = zoneOf(Z); return z ? `seismic zone ${z}` : `Z = ${Z}`; };
+const zoneOf = zoneOfZ;
 
 /** Stress reduction coefficient rd. SOURCE: Youd et al. (2001) Eq. 2a, 2b (Liao & Whitman 1986). */
 export const rdAt = (z: number): number => (z <= 9.15 ? 1 - 0.00765 * z : 1.174 - 0.0267 * z);

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { liquefaction, finesCorrection, crr75, rdAt, correctSpt, singlePile, effectiveStress } from '../src/engine';
+import { liquefaction, zoneOfZ, finesCorrection, crr75, rdAt, correctSpt, singlePile, effectiveStress } from '../src/engine';
 import { boreholes } from '../src/examples/mandi';
 
 const [bh1, , bh3] = boreholes;
@@ -48,5 +48,18 @@ describe('water table at test time (reviewer findings)', () => {
     const sOct = effectiveStress(bh1.layers, 7.225, bh1.measuredWT);
     expect(sAug).toBeCloseTo(79.5, 0);
     expect(sOct).toBeCloseTo(92.0, 1);
+  });
+});
+
+describe('seismic zone is a user input (IS 1893 Table 3)', () => {
+  it('zone ↔ Z lookup', () => {
+    expect(zoneOfZ(0.36)).toBe('V');
+    expect(zoneOfZ(0.10)).toBe('II');
+    expect(zoneOfZ(0.2)).toBeNull(); // custom value
+  });
+  it('a lower zone changes the result: BH-3 SM at 1.5 m is safe in zone II (amax = 0.05 g)', () => {
+    const r = liquefaction(bh3, { amax: 0.10 / 2, Mw: 7.5 }).rows.find((x) => x.depth === 1.5)!;
+    expect(r.FS!).toBeCloseTo(0.8175 * (0.18 / 0.05), 2); // CSR ∝ amax
+    expect(r.status).toBe('safe');
   });
 });

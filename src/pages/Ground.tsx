@@ -4,7 +4,7 @@ import { Arrow, Badge, Button, Card, SectionHead, SliderField, Tabs, TabPanel } 
 import { DepthChart, PressureBulb, SectionView, SoilColumn } from '../components/viz';
 import { useProject } from '../store/project';
 import { useResults } from '../hooks/useResults';
-import { deltaSigmaProfile } from '../engine';
+import { deltaSigmaProfile, zoneLabel } from '../engine';
 
 export default function Ground() {
   const bhs = useProject((s) => s.boreholes);
@@ -79,7 +79,7 @@ export default function Ground() {
             <span className="hud">liquefaction · IS 1893 (Part 1):2016 Annex F (simplified, Youd et al. 2001) · {bh.id}</span>
             <span className="font-mono text-[11px] text-muted">amax = {seis.amax ?? 0.18} g · Mw {seis.Mw ?? 7.5} · CSR at design WT {bh.designWT} m · (N1)60 at test WT {bh.measuredWT} m</span>
           </div>
-          <p className="mb-4 max-w-3xl text-[13px] text-warm">Seismic zone V, Z = {seis.Z ?? 0.36}. FS &lt; 1.0 liquefies, 1.0–1.2 marginal. Last column: FS if amax = Z = {seis.Z ?? 0.36} g (upper bound). Clay with PI ≥ 12 is not susceptible (Bray &amp; Sancio 2006).</p>
+          <p className="mb-4 max-w-3xl text-[13px] text-warm">{zoneLabel(seis.Z ?? 0.36).replace(/^s/, 'S')}, Z = {seis.Z ?? 0.36}. FS &lt; 1.0 liquefies, 1.0–1.2 marginal. Last column: FS if amax = Z = {seis.Z ?? 0.36} g (upper bound). Clay with PI ≥ 12 is not susceptible (Bray &amp; Sancio 2006).</p>
           <table className="w-full min-w-[820px] text-left text-[14px]">
             <thead><tr className="border-b border-line-soft">{['Depth m', 'Soil', 'N', '(N1)60', 'FC %', '(N1)60cs', 'CRR', 'rd', 'CSR', 'FS', '', `FS @ ${seis.Z ?? 0.36} g`].map((h) => <th key={h} className="py-2 font-mono text-[10px] uppercase tracking-[0.12em] text-muted">{h}</th>)}</tr></thead>
             <tbody>{(res.perBH[bh.id]?.liq?.rows ?? []).map((r, i) => {

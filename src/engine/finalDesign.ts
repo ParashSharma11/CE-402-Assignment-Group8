@@ -28,7 +28,7 @@ export interface FinalOptions extends DesignOptions {
   pile: PileOptions;
   /** Where isolated footings fail: piles in that zone with a movement joint, or piles under the whole building. */
   alternative?: 'piles-zone' | 'piles-all';
-  /** Liquefaction result per borehole id. A zone with a liquefiable layer gets piles (seismic zone V). */
+  /** Liquefaction result per borehole id. A zone with a liquefiable layer gets piles. */
   liq?: Record<string, LiqResult>;
   /** Include stress from neighbouring footings in the clay consolidation (Boussinesq superposition). Default true. */
   overlap?: boolean;
@@ -106,7 +106,7 @@ export function finalDesign(cols: ColumnInput[], bhs: Borehole[], limits: Settle
     bh: z, type: (pileZone(z) ? 'piles' : 'isolated') as 'isolated' | 'piles',
     reason: [
       !staticOk.get(z) ? `isolated footings cannot meet bearing + ${limits.maxTotal} mm settlement within the ${o.sx} m grid` : '',
-      liqOf(z).length ? `liquefiable ${liqOf(z).map((l) => `${l.symbol} ${l.top}–${l.bottom} m`).join(', ')} (seismic zone V)` : '',
+      liqOf(z).length ? `liquefiable ${liqOf(z).map((l) => `${l.symbol} ${l.top}–${l.bottom} m`).join(', ')} (seismic check)` : '',
     ].filter(Boolean).join('; ') || (o.forceAll ? o.forceAll.reason : pileZone(z) ? 'piles under the whole building (chosen)' : 'isolated footings feasible'),
   }));
 
@@ -198,7 +198,7 @@ export function finalDesign(cols: ColumnInput[], bhs: Borehole[], limits: Settle
   let acrossJoint: FinalDesign['acrossJoint'] = null;
   for (const q of pairs) if (q.separated && (!acrossJoint || q.angular > acrossJoint.angular)) acrossJoint = { a: q.a, b: q.b, delta: q.delta, angular: q.angular };
   if (acrossJoint) notes.push(`Without the joint, ${acrossJoint.a}-${acrossJoint.b} would have δ = ${acrossJoint.delta.toFixed(1)} mm, β = 1/${Math.round(1 / Math.max(acrossJoint.angular, 1e-9))} (limit 1/${Math.round(1 / limits.maxAngular)}): footing and piled columns cannot share a bay, so the joint is required.`);
-  if (lines.size) notes.push(`Movement (separation) joint between grid lines ${[...lines].join(', ')}: piled and footing blocks settle independently. In seismic zone V the joint gap must also satisfy IS 1893 — TO VERIFY.`);
+  if (lines.size) notes.push(`Movement (separation) joint between grid lines ${[...lines].join(', ')}: piled and footing blocks settle independently. The joint gap must also satisfy the IS 1893 separation clause — TO VERIFY.`);
   return {
     columns, zones, target: best ? sol.T : null, pairs, maxTotal,
     passTotal: maxTotal <= limits.maxTotal + 1e-9,
