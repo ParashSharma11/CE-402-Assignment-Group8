@@ -13,10 +13,12 @@ const state = {
 describe('project results (Mandi example)', () => {
   const r = computeResults(state);
   it('designs all 28 columns', () => expect(r.colResults.length).toBe(28));
-  it('flags footings wider than the grid allows (AI audit item: overlap was not checked)', () => {
-    const ov = r.checks.find((c) => c.name.startsWith('Footing overlap'));
-    expect(ov).toBeDefined();
-    expect(ov!.status).toBe('fail');
+  it('final design keeps every footing inside the grid (AI audit item 1: overlap was not checked)', () => {
+    const geo = r.checks.find((c) => c.name.startsWith('Footings fit the column grid'));
+    expect(geo?.status).toBe('pass');
+  });
+  it('no check fails on the final design', () => {
+    expect(r.checks.filter((c) => c.status === 'fail')).toEqual([]);
   });
   it('proposes an alternative for the failing zone', () => {
     expect(r.alternative.needed).toBe(true);

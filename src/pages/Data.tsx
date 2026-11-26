@@ -68,6 +68,9 @@ function ProjectStep() {
         <Select<ShearMode> label="Shear failure mode" value={p.mode} onChange={(v) => set({ mode: v })} options={[{ value: 'auto', label: 'Auto (IS 6403 interpolation)' }, { value: 'general', label: 'General shear' }, { value: 'local', label: 'Local shear' }]} />
         <Select label="Soil strength (IS 6403)" value={p.strength ?? 'zone-average'} onChange={(v) => set({ strength: v as 'zone-average' | 'base-layer' })} options={[{ value: 'zone-average', label: 'Shear-zone average (team v1)' }, { value: 'base-layer', label: 'Founding layer only' }]} />
         <Select label="29°–36° transition" value={p.transition ?? 'factors'} onChange={(v) => set({ transition: v as 'factors' | 'capacity' })} options={[{ value: 'factors', label: 'Interpolate factors (team v1)' }, { value: 'capacity', label: 'Interpolate qnu' }]} />
+        <Field label="Pile diameter (alternative)" unit="m" value={p.pileD ?? 0.5} onChange={(v) => set({ pileD: v ?? 0.5 })} />
+        <Field label="Pile socket into bearing stratum" unit="m" value={p.pileSocket ?? 1.5} onChange={(v) => set({ pileSocket: v ?? 1.5 })} />
+        <Select label="Where isolated footings fail" value={p.alternative ?? 'piles-zone'} onChange={(v) => set({ alternative: v as 'piles-zone' | 'piles-all' })} options={[{ value: 'piles-zone', label: 'Piles in that zone + movement joint' }, { value: 'piles-all', label: 'Piles under the whole building' }]} className="sm:col-span-2" />
         <Field label="Schmertmann time t" unit="yr" value={p.tYears} onChange={(v) => set({ tYears: v ?? 0.1 })} />
         <Field label="γ footing + backfill" unit="kN/m³" value={p.gammaFB} onChange={(v) => set({ gammaFB: v ?? 20 })} />
         <div className="flex flex-col gap-3 sm:col-span-2">

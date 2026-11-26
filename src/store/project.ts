@@ -17,6 +17,11 @@ export interface ProjectInfo {
   strength?: 'zone-average' | 'base-layer';
   /** 29°–36° transition: team v1 method = interpolate factors (default) or interpolate capacity. */
   transition?: 'factors' | 'capacity';
+  /** Pile diameter, m, and socket into the bearing stratum, m. */
+  pileD?: number;
+  pileSocket?: number;
+  /** Where isolated footings fail: piles in that zone + movement joint, or piles under the whole building. */
+  alternative?: 'piles-zone' | 'piles-all';
   limits: SettlementLimits;
 }
 
@@ -75,7 +80,7 @@ const blankBorehole = (id: string): Borehole => ({
 const blankState = () => ({
   project: {
     name: 'New site', location: '', group: 0, FS: 3, Df: 1.5, mode: 'auto' as ShearMode, useDepthFactors: true,
-    includeSelfWeight: true, gammaFB: 20, tYears: 0.1, strength: 'zone-average' as const, transition: 'factors' as const,
+    includeSelfWeight: true, gammaFB: 20, tYears: 0.1, strength: 'zone-average' as const, transition: 'factors' as const, pileD: 0.5, pileSocket: 1.5, alternative: 'piles-zone' as const,
     limits: { maxTotal: 50, maxDiffRatio: 0.0015, maxAngular: 1 / 666, source: 'IS 1904:1986 Table 1 — cite the row you adopt' },
   },
   building: { nLines: 4, nRows: 3, sx: 5, sy: 5, loads: { corner: 500, edge: 800, interior: 1200 }, overrides: {}, zoning: [{ from: 1, to: 4, bh: 'BH-1' }] },

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Html } from '@react-three/drei';
 import type { Borehole } from '../engine';
-import type { ColumnResult } from '../lib/results';
+import type { FinalColumn } from '../engine';
 import { soilColor } from './viz';
 
 const lerpColor = (t: number) => {
@@ -13,8 +13,8 @@ const lerpColor = (t: number) => {
   return `rgb(${p.map((v, i) => Math.round(v + (q[i] - v) * s)).join(',')})`;
 };
 
-export default function Frame3D({ results, boreholes, nLines, nRows, sx, sy, sLimit, selected, onSelect, showSoil, bySettlement }: {
-  results: ColumnResult[]; boreholes: Borehole[]; nLines: number; nRows: number; sx: number; sy: number; sLimit: number;
+export default function Frame3D({ results, boreholes, nLines, nRows, sx, sy, sLimit, Df, pileD = 0.5, selected, onSelect, showSoil, bySettlement }: {
+  results: FinalColumn[]; Df: number; pileD?: number; boreholes: Borehole[]; nLines: number; nRows: number; sx: number; sy: number; sLimit: number;
   selected?: string; onSelect: (id: string) => void; showSoil: boolean; bySettlement: boolean;
 }) {
   const [hover, setHover] = useState<string | null>(null);
@@ -53,22 +53,27 @@ export default function Frame3D({ results, boreholes, nLines, nRows, sx, sy, sLi
       {beams.map((b, i) => (
         <mesh key={i} position={[b.x, b.h, b.z]} rotation={[0, b.rot, 0]}><boxGeometry args={[b.len, 0.45, 0.3]} /><meshStandardMaterial color="#a88a80" transparent opacity={0.55} /></mesh>
       ))}
-      {/* columns + footings */}
+      {/* columns + footings / pile caps + piles */}
       {results.map((r) => {
-        const f = r.check?.footing; const B = f?.B ?? 1, L = f?.L ?? B;
+        const B = r.footprint.B || 1, L = r.footprint.L || B;
         const x = r.col.x - ox, z = oy - r.col.y;
-        const s = (r.check?.sTotal ?? 0) * 1000;
+        const s = r.s * 1000;
         const sel = selected === r.col.id, hov = hover === r.col.id;
-        const color = bySettlement ? lerpColor(s / sLimit) : r.found ? '#8fd48a' : '#ff6b6b';
+        const color = bySettlement ? lerpColor(s / sLimit) : r.type === 'piles' ? '#6cc4d6' : '#8fd48a';
+        const n = r.pile?.nPiles ?? 0, side = Math.ceil(Math.sqrt(n || 1)), rows = Math.ceil((n || 1) / side);
         return (
           <group key={r.col.id} onPointerOver={(e) => { e.stopPropagation(); setHover(r.col.id); document.body.style.cursor = 'pointer'; }}
             onPointerOut={() => { setHover(null); document.body.style.cursor = ''; }} onClick={(e) => { e.stopPropagation(); onSelect(r.col.id); }}>
             <mesh position={[x, storey * floors / 2, z]}><boxGeometry args={[0.4, storey * floors, 0.4]} /><meshStandardMaterial color={sel || hov ? '#ff4a1c' : '#f4e8df'} /></mesh>
-            <mesh position={[x, -(r.check?.footing.Df ?? 1.5) + 0.25, z]}><boxGeometry args={[B, 0.5, L]} /><meshStandardMaterial color={color} emissive={sel || hov ? '#ff4a1c' : '#000'} emissiveIntensity={sel ? 0.6 : hov ? 0.35 : 0} /></mesh>
+            <mesh position={[x, -Df + 0.25, z]}><boxGeometry args={[B, 0.5, L]} /><meshStandardMaterial color={color} emissive={sel || hov ? '#ff4a1c' : '#000'} emissiveIntensity={sel ? 0.6 : hov ? 0.35 : 0} /></mesh>
+            {r.type === 'piles' && r.pile && Array.from({ length: n }, (_, q) => {
+              const px = ((q % side) - (side - 1) / 2) * 3 * pileD, pz = (Math.floor(q / side) - (rows - 1) / 2) * 3 * pileD;
+              return <mesh key={q} position={[x + px, -Df - r.pile!.length / 2, z + pz]}><cylinderGeometry args={[pileD / 2, pileD / 2, r.pile!.length, 16]} /><meshStandardMaterial color="#d8cfc6" emissive={sel || hov ? '#ff4a1c' : '#000'} emissiveIntensity={sel || hov ? 0.3 : 0} /></mesh>;
+            })}
             {(hov || sel) && (
               <Html position={[x, storey * floors + 1.2, z]} center distanceFactor={30}>
                 <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: '#F4E8DF', background: '#140806', border: '1px solid #FF4A1C', borderRadius: 999, padding: '4px 10px', whiteSpace: 'nowrap' }}>
-                  {r.col.id} · B {B.toFixed(2)} m · s {s.toFixed(1)} mm
+                  {r.col.id} · {r.type === 'piles' ? `${n} piles × ${r.pile!.length.toFixed(1)} m` : `B ${B.toFixed(2)} m`} · s {s.toFixed(1)} mm
                 </div>
               </Html>
             )}

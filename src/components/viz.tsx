@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { pl } from './motion';
 import { motion, AnimatePresence } from 'framer-motion';
-import { deltaSigmaAt, type Borehole, type SoilLayer } from '../engine';
+import { deltaSigmaAt, type Borehole, type SoilLayer, type FinalDesign } from '../engine';
 import type { ColumnResult } from '../lib/results';
 
 export const SOIL_COLOR: Record<string, string> = { FILL: '#6B4535', SM: '#9A7550', SP: '#B89A68', SW: '#C2A574', SC: '#8E6A4E', ML: '#8C7B6B', MH: '#7C6E62', CL: '#73685F', CI: '#6A625E', CH: '#5C5652', GW: '#857565', GP: '#7A6D60', OL: '#3E3328', OH: '#3E3328', PT: '#2F2620', ROCK: '#5B5550' };
@@ -236,6 +236,45 @@ export function FootingSection({ B, Df, zw, label }: { B: number; Df: number; zw
       <path d={`M24 ${gy}V${fy}M18 ${gy}h12M18 ${fy}H${cx - (B * k) / 2}`} stroke="#FF4A1C" strokeOpacity="0.85" />
       <text x={32} y={(gy + fy) / 2 + 4} className="num" fontSize="12" fill="#FF4A1C">Df = {Df.toFixed(2)} m</text>
       <text x={12} y={24} className="hud" fontSize="10" fill="#A88A80">section {label}</text>
+    </svg>
+  );
+}
+
+/* ---------------- Final design plan: footings to scale, pile caps with piles, movement joint ---------------- */
+export function FinalPlan({ final, nLines, nRows, sx, sy, sLimit, pileD = 0.5, selected, onSelect }: { final: FinalDesign; nLines: number; nRows: number; sx: number; sy: number; sLimit: number; pileD?: number; selected?: string; onSelect?: (id: string) => void }) {
+  const Lx = (nLines - 1) * sx, Ly = (nRows - 1) * sy;
+  const pad = 4, k = 760 / (Lx + 2 * pad);
+  const W = (Lx + 2 * pad) * k, H = (Ly + 2 * pad) * k;
+  const X = (x: number) => (x + pad) * k, Y = (y: number) => H - (y + pad) * k;
+  const colour = (s: number) => { const t = Math.min(1, s * 1000 / sLimit); return t < 0.6 ? '#8FD48A' : t < 0.9 ? '#FFC247' : '#FF6B6B'; };
+  const jointX = final.jointBetween.map((j) => { const [a, b] = j.split('–').map(Number); return ((a - 1) * sx + (b - 1) * sx) / 2; });
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="Final foundation plan">
+      {Array.from({ length: nLines }, (_, i) => <g key={'v' + i}><path d={`M${X(i * sx)} ${Y(-1.8)}V${Y(Ly + 1.8)}`} stroke="#F4E8DF" strokeOpacity="0.14" strokeDasharray="8 3 2 3" /><circle cx={X(i * sx)} cy={Y(-2.6)} r={11} fill="none" stroke="#A88A80" /><text x={X(i * sx)} y={Y(-2.6) + 4} textAnchor="middle" className="num" fontSize="11" fill="#E9C2B8">{i + 1}</text></g>)}
+      {Array.from({ length: nRows }, (_, j) => <g key={'h' + j}><path d={`M${X(-1.8)} ${Y(j * sy)}H${X(Lx + 1.8)}`} stroke="#F4E8DF" strokeOpacity="0.14" strokeDasharray="8 3 2 3" /><circle cx={X(-2.6)} cy={Y(j * sy)} r={11} fill="none" stroke="#A88A80" /><text x={X(-2.6)} y={Y(j * sy) + 4} textAnchor="middle" className="num" fontSize="11" fill="#E9C2B8">{String.fromCharCode(65 + j)}</text></g>)}
+      {jointX.map((x) => (
+        <g key={x}>
+          <path d={`M${X(x)} ${Y(-1.2)}V${Y(Ly + 1.2)}`} stroke="#FF4A1C" strokeWidth="2.5" strokeDasharray="10 5" />
+          <text x={X(x) + 6} y={Y(Ly + 1.4)} className="num" fontSize="10" fill="#FF4A1C">movement joint</text>
+        </g>
+      ))}
+      {final.columns.map((c, i) => {
+        const { B, L } = c.footprint, sel = selected === c.col.id, col = colour(c.s);
+        return (
+          <g key={c.col.id} onClick={() => onSelect?.(c.col.id)} style={{ cursor: 'pointer' }}>
+            <motion.rect initial={{ width: 0, height: 0, x: X(c.col.x), y: Y(c.col.y) }} animate={{ width: B * k, height: L * k, x: X(c.col.x) - (B * k) / 2, y: Y(c.col.y) - (L * k) / 2 }}
+              transition={{ type: 'spring', stiffness: 120, damping: 16, delay: i * 0.015 }} rx={c.type === 'piles' ? 6 : 3}
+              fill={col} fillOpacity={sel ? 0.42 : 0.16} stroke={sel ? '#FF4A1C' : col} strokeWidth={sel ? 2.5 : 1.2} />
+            {c.type === 'piles' && c.pile && Array.from({ length: c.pile.nPiles }, (_, q) => {
+              const n = c.pile!.nPiles, side = Math.ceil(Math.sqrt(n)), rows = Math.ceil(n / side);
+              const ox = ((q % side) - (side - 1) / 2) * 3 * pileD, oy = (Math.floor(q / side) - (rows - 1) / 2) * 3 * pileD;
+              return <circle key={q} cx={X(c.col.x + ox)} cy={Y(c.col.y + oy)} r={(pileD / 2) * k} fill="#140806" stroke="#F4E8DF" strokeOpacity="0.85" />;
+            })}
+            <rect x={X(c.col.x) - 4} y={Y(c.col.y) - 4} width={8} height={8} fill="#F4E8DF" />
+            <text x={X(c.col.x)} y={Y(c.col.y) + (L * k) / 2 + 13} textAnchor="middle" className="num" fontSize="10" fill="#E9C2B8">{c.col.id} · {c.type === 'piles' ? `${c.pile?.nPiles} piles` : `${B.toFixed(2)}${Math.abs(L - B) > 1e-6 ? '×' + L.toFixed(2) : ''}`}</text>
+          </g>
+        );
+      })}
     </svg>
   );
 }

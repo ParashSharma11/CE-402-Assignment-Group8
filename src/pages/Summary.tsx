@@ -67,7 +67,7 @@ export default function Summary() {
   const reportSummary = checked && state === 'done' ? text : template;
 
   const download = (name: string, data: string, type: string) => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); };
-  const csv = () => ['column,borehole,P_kN,B_m,L_m,qn_kPa,qns_kPa,si_mm,sc_mm,s_mm,passes', ...res.colResults.filter((c) => c.check).map((c) => [c.col.id, c.col.boreholeId, c.col.load.P.toFixed(1), c.check!.footing.B.toFixed(2), (c.check!.footing.L ?? c.check!.footing.B).toFixed(2), c.check!.qApplied.toFixed(1), c.check!.bearing.qns.toFixed(1), (c.check!.sImmediate * 1000).toFixed(1), (c.check!.sConsolidation * 1000).toFixed(1), (c.check!.sTotal * 1000).toFixed(1), c.found].join(','))].join('\n');
+  const csv = () => ['column,borehole,P_kN,foundation,B_m,L_m,piles,pile_length_m,qn_kPa,qns_kPa,s_mm', ...(res.final?.columns ?? []).map((c) => [c.col.id, c.col.boreholeId, c.col.load.P.toFixed(1), c.type, c.footprint.B.toFixed(2), c.footprint.L.toFixed(2), c.pile?.nPiles ?? '', c.pile ? c.pile.length.toFixed(2) : '', c.check ? c.check.qApplied.toFixed(1) : '', c.check ? c.check.bearing.qns.toFixed(1) : '', (c.s * 1000).toFixed(1)].join(','))].join('\n');
 
   return (
     <Page>

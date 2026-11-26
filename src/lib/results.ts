@@ -4,7 +4,7 @@
  */
 import {
   loadFactor, sizeFooting, buildingChecks, raftCheck, correctSpt, stressProfile, validateLayers, fitDirectShear,
-  cuFromUU, interpretOedometer, type Borehole, type ColumnInput, type FootingCheck, type SptCorrected,
+  cuFromUU, interpretOedometer, finalDesign, type FinalDesign, type Borehole, type ColumnInput, type FootingCheck, type SptCorrected,
   type StressPoint, type ShearFit, type OedometerResult,
 } from '../engine';
 import { rowLabel, type ProjectState } from '../store/project';
@@ -22,6 +22,8 @@ export interface ProjectResults {
   perBH: Record<string, { errors: string[]; spt: SptCorrected[]; stressDesign: StressPoint[]; stressMeasured: StressPoint[] }>;
   lab: { shear: (ShearFit & { name: string })[]; uu: { name: string; cu: number }[]; oed: OedometerResult | null; labErrors: string[] };
   building: ReturnType<typeof buildingChecks> | null;
+  /** The design actually proposed: equal-settlement footings + piles where footings cannot work. */
+  final: FinalDesign | null;
   raft: { bh: string; qn: number; qns: number; sCentre: number; sCorner: number } | null;
   checks: CheckRow[];
   assumptions: Assumption[];
@@ -115,34 +117,42 @@ export function computeResults(s: ProjectState): ProjectResults {
     } catch (e) { errors.push(`Raft: ${(e as Error).message}`); }
   }
 
-  /* Check table */
+  /* Final design: equal-settlement footings where feasible, piles elsewhere */
+  let final: FinalDesign | null = null;
+  const sx = s.building.sx, sy = s.building.sy;
+  try {
+    final = finalDesign(columns.filter((c) => bhById.has(c.boreholeId) && !perBH[c.boreholeId]?.errors.length), s.boreholes, p.limits, {
+      ...opt, Df: p.Df, sx, sy, clearance: 0.3, alternative: p.alternative ?? 'piles-zone',
+      pile: { D: p.pileD ?? 0.5, cutoff: p.Df, socket: p.pileSocket ?? 1.5 },
+    });
+  } catch (e) { errors.push(`Final design: ${(e as Error).message}`); }
+
+  /* Check table — on the FINAL design */
   const checks: CheckRow[] = [];
   const fmt = (x: number, d = 1) => +x.toFixed(d);
   const lim = p.limits;
-  const bearingWorst = colResults.filter((r) => r.check).reduce<ColumnResult | null>((m, r) => (!m || r.check!.qApplied / r.check!.bearing.qns > m.check!.qApplied / m.check!.bearing.qns ? r : m), null);
-  if (bearingWorst?.check) {
-    const u = bearingWorst.check.qApplied / bearingWorst.check.bearing.qns;
-    checks.push({ name: `Bearing, governing column ${bearingWorst.col.id}`, value: fmt(bearingWorst.check.qApplied), unit: 'kPa', limit: `≤ qns = ${fmt(bearingWorst.check.bearing.qns)} kPa (FS ${p.FS})`, clause: 'IS 6403:1981', status: u <= 1 ? 'pass' : 'fail' });
-  }
-  if (building) {
-    checks.push({ name: 'Maximum total settlement', value: fmt(building.maxTotal), unit: 'mm', limit: `≤ ${lim.maxTotal} mm`, clause: lim.source, status: building.passTotal ? 'pass' : 'fail' });
-    if (building.worstDiff) {
-      const dl = lim.maxDifferential ?? (lim.maxDiffRatio ?? 0) * building.worstDiff.span * 1000;
-      checks.push({ name: `Differential settlement ${building.worstDiff.a}–${building.worstDiff.b}`, value: fmt(building.worstDiff.delta), unit: 'mm', limit: `≤ ${fmt(dl)} mm`, clause: lim.source, status: building.passDiff ? 'pass' : 'fail' });
-    }
-    if (building.worstAng) {
-      checks.push({ name: `Angular distortion ${building.worstAng.a}–${building.worstAng.b}`, value: fmt(building.worstAng.angular, 5), unit: '', limit: `≤ 1/${Math.round(1 / lim.maxAngular)} = ${fmt(lim.maxAngular, 5)}`, clause: lim.source, status: building.passAngular ? 'pass' : 'fail' });
-    }
-  }
   const nFail = failing.length;
-  // Geometric check: adjacent isolated footings must not touch (B along x, L along y on the plan).
-  const clear = 0.3; // m, minimum clear gap between footing edges — ASSUMED construction clearance
-  const overlaps = colResults.filter((r) => r.check && (r.check.footing.B > s.building.sx - clear || (r.check.footing.L ?? r.check.footing.B) > s.building.sy - clear));
-  if (overlaps.length) {
-    const worst = overlaps.reduce((m, r) => (r.check!.footing.B > m.check!.footing.B ? r : m));
-    checks.push({ name: `Footing overlap (${overlaps.length} columns, e.g. ${worst.col.id})`, value: fmt(worst.check!.footing.B, 2), unit: 'm', limit: `≤ spacing − ${clear} m = ${fmt(Math.min(s.building.sx, s.building.sy) - clear, 2)} m`, clause: 'geometry — isolated footings must not touch', status: 'fail' });
+  if (final) {
+    const iso = final.columns.filter((c) => c.type === 'isolated' && c.check);
+    const gov = iso.reduce<(typeof iso)[number] | null>((m, c) => (!m || c.check!.qApplied / c.check!.bearing.qns > m.check!.qApplied / m.check!.bearing.qns ? c : m), null);
+    if (gov) checks.push({ name: `Bearing, isolated footings (governing ${gov.col.id})`, value: fmt(gov.check!.qApplied), unit: 'kPa', limit: `≤ qns = ${fmt(gov.check!.bearing.qns)} kPa (FS ${p.FS})`, clause: 'IS 6403:1981', status: gov.check!.passBearing ? 'pass' : 'fail' });
+    const pc = final.columns.filter((c) => c.type === 'piles' && c.pile);
+    if (pc.length) {
+      const g = pc.reduce((m, c) => (c.col.load.P / (c.pile!.nPiles * c.pile!.Qsafe) > m.col.load.P / (m.pile!.nPiles * m.pile!.Qsafe) ? c : m));
+      checks.push({ name: `Pile capacity (governing ${g.col.id}: ${g.pile!.nPiles} piles Ø${p.pileD ?? 0.5} m × ${fmt(g.pile!.length, 2)} m)`, value: fmt(g.col.load.P), unit: 'kN', limit: `≤ n·Q_safe = ${fmt(g.pile!.nPiles * g.pile!.Qsafe)} kN (FS 2.5)`, clause: 'IS 2911 (Part 1/Sec 2) — TO VERIFY', status: g.col.load.P <= g.pile!.nPiles * g.pile!.Qsafe + 1e-9 ? 'pass' : 'fail' });
+    }
+    checks.push({ name: 'Maximum total settlement', value: fmt(final.maxTotal), unit: 'mm', limit: `≤ ${lim.maxTotal} mm`, clause: lim.source, status: final.passTotal ? 'pass' : 'fail' });
+    const chk = final.pairs.filter((q) => !q.separated);
+    if (chk.length) {
+      const wd = chk.reduce((m, q) => (q.delta > m.delta ? q : m)), wa = chk.reduce((m, q) => (q.angular > m.angular ? q : m));
+      const dl = lim.maxDifferential ?? (lim.maxDiffRatio ?? 0) * wd.span * 1000;
+      checks.push({ name: `Differential settlement ${wd.a}–${wd.b}`, value: fmt(wd.delta, 2), unit: 'mm', limit: `≤ ${fmt(dl, 2)} mm`, clause: lim.source, status: final.passDiff ? 'pass' : 'fail' });
+      checks.push({ name: `Angular distortion ${wa.a}–${wa.b}`, value: fmt(wa.angular, 5), unit: '', limit: `≤ 1/${Math.round(1 / lim.maxAngular)} = ${fmt(lim.maxAngular, 5)}`, clause: lim.source, status: final.passAngular ? 'pass' : 'fail' });
+    }
+    checks.push({ name: 'Footings fit the column grid', value: fmt(Math.max(0, ...final.columns.map((c) => Math.max(c.footprint.B, c.footprint.L))), 2), unit: 'm', limit: `≤ spacing − 0.3 m = ${fmt(Math.min(sx, sy) - 0.3, 2)} m`, clause: 'geometry (clear gap 0.3 m ASSUMED)', status: final.columns.every((c) => c.footprint.B <= sx - 0.3 + 1e-9 && c.footprint.L <= sy - 0.3 + 1e-9) ? 'pass' : 'fail' });
+    const pz = final.zones.filter((z) => z.type === 'piles');
+    if (pz.length) checks.push({ name: `Alternative foundation: piles in ${pz.map((z) => z.bh).join(', ')}${final.jointBetween.length ? `, movement joint at lines ${final.jointBetween.join(', ')}` : ''}`, value: pc.length, unit: `of ${final.columns.length} columns`, limit: 'isolated footings infeasible there', clause: 'Brief criterion 3; IS 1893 joint — TO VERIFY', status: 'warn' });
   }
-  checks.push({ name: 'Columns with a valid isolated footing', value: columns.length - nFail, unit: `of ${columns.length}`, limit: `all ${columns.length}`, clause: 'IS 6403 + IS 1904', status: nFail ? 'fail' : 'pass' });
 
   /* Assumptions */
   const assumptions: Assumption[] = [
@@ -156,20 +166,21 @@ export function computeResults(s: ProjectState): ProjectResults {
     { item: 'Footing + backfill weight', value: p.includeSelfWeight ? `γ = ${p.gammaFB} kN/m³ over Df` : 'ignored', reason: 'Net pressure = gross − overburden removed', source: 'IS 6403 definitions' },
     { item: 'Settlement limits', value: `${lim.maxTotal} mm; δ ≤ ${lim.maxDiffRatio ?? '–'}·L; β ≤ 1/${Math.round(1 / lim.maxAngular)}`, reason: 'RC framed building on isolated footings', source: lim.source },
     { item: 'Clay sublayers', value: '≤ 0.5 m, Δσ under footing centre (Boussinesq)', reason: 'Assignment P5', source: 'Das (2014) Ch. 11' },
+    { item: 'Footing proportioning', value: final?.target ? `equal settlement, s* = ${(final.target * 1000).toFixed(1)} mm` : 'smallest size passing bearing + settlement', reason: 'Sizing every footing to its minimum makes neighbours settle differently; equal settlement keeps δ and β within IS 1904', source: 'Terzaghi & Peck (1967); Tomlinson — TO VERIFY' },
+    { item: 'Pile design', value: `bored cast-in-situ Ø${p.pileD ?? 0.5} m, socket ${p.pileSocket ?? 1.5} m into the bearing stratum, ≥ 2 piles per column, FS 2.5`, reason: 'End bearing in very dense gravel below the soft clay; K = 1.5, α = 1.0, Ec = 25 GPa ASSUMED', source: 'IS 2911 (Part 1/Sec 2) — TO VERIFY' },
     { item: 'Schmertmann time', value: `${p.tYears} yr (C2)`, reason: 'End of construction', source: 'Schmertmann et al. (1978)' },
   ];
   if (oed) assumptions.push({ item: 'Oedometer interpretation', value: `Cc ${oed.Cc.toFixed(3)}, Cr ${oed.Cr.toFixed(3)}, σ′p ${oed.sigmaP.toFixed(0)} kPa`, reason: 'Lab pressures converted from kg/cm² (×98.0665); σ′p by Casagrande (scale-dependent)', source: 'Das (2014) §11.5–11.6' });
 
-  const proposal = nFail
-    ? raft && raft.sCentre > lim.maxTotal
-      ? `Isolated footings fail in ${failZones.join(', ')}; a raft there settles ≈ ${raft.sCentre.toFixed(0)} mm, also above ${lim.maxTotal} mm. Propose bored piles socketed into the very dense gravel stratum below the clay for those grid lines, with the remaining lines on isolated footings (check differential movement at the interface).`
-      : `Isolated footings fail in ${failZones.join(', ')}; a raft over the footprint (net ${raft?.qn.toFixed(0)} kPa) is the first alternative to check.`
-    : overlaps.length
-      ? `Isolated footings pass bearing and settlement but ${overlaps.length} would overlap their neighbours; use combined or strip footings for those columns.`
-      : 'Isolated footings satisfy bearing and settlement everywhere.';
+  const pz = final?.zones.filter((z) => z.type === 'piles') ?? [];
+  const proposal = final
+    ? pz.length
+      ? `Isolated footings cannot meet bearing and the ${lim.maxTotal} mm settlement limit in ${pz.map((z) => z.bh).join(', ')} (soft clay under a high water table)${raft ? `, and a raft there would settle ≈ ${raft.sCentre.toFixed(0)} mm` : ''}. Proposed: bored piles Ø${p.pileD ?? 0.5} m to the dense gravel for those grid lines, isolated footings proportioned for equal settlement (s* = ${final.target ? (final.target * 1000).toFixed(1) : '–'} mm) elsewhere${final.jointBetween.length ? `, and a movement joint between grid lines ${final.jointBetween.join(', ')}` : ''}. All checks then ${final.passTotal && final.passDiff && final.passAngular && final.passBearing ? 'pass' : 'still need attention'}.`
+      : `Isolated footings proportioned for equal settlement (s* = ${final.target ? (final.target * 1000).toFixed(1) : '–'} mm) satisfy bearing, total and differential settlement everywhere.`
+    : 'Design could not be completed — check the inputs.';
 
   return {
-    lambda, columns, colResults, perBH, lab: { shear, uu, oed, labErrors }, building, raft, checks, assumptions,
-    alternative: { needed: nFail > 0, zones: failZones, proposal }, errors: [...errors, ...labErrors],
+    lambda, columns, colResults, perBH, lab: { shear, uu, oed, labErrors }, building, final, raft, checks, assumptions,
+    alternative: { needed: nFail > 0 || pz.length > 0, zones: pz.length ? pz.map((z) => z.bh) : failZones, proposal }, errors: [...errors, ...labErrors],
   };
 }

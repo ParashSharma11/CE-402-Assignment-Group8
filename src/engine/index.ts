@@ -12,3 +12,5 @@ export * from './design';
 
 /** Load factor for group g: λ = 1 + g/100 (assignment brief). */
 export const loadFactor = (g: number): number => 1 + g / 100;
+export * from './piles';
+export * from './finalDesign';
