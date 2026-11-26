@@ -25,7 +25,7 @@ with its substituted values and its source:
 Isolated footings were tried first but, once the pressure bulbs of neighbouring footings are superposed in the CI
 clay, they settle up to 114 mm (limit 50 mm); BH-3 also has liquefiable sand. **Recommended: Ø0.5 m bored piles under
 every column, socketed into the dense gravel (2–4 piles per column), maximum settlement 13.1 mm — every check passes.**
-Full numbers: [docs/DESIGN_SUMMARY.md](docs/DESIGN_SUMMARY.md).
+Full report: [docs/GeoFound_Final_Report.pdf](docs/GeoFound_Final_Report.pdf) · numbers: [docs/DESIGN_SUMMARY.md](docs/DESIGN_SUMMARY.md).
 
 ![Design page — final foundation, checks and design decision](docs/images/design.jpg)
 
@@ -87,6 +87,8 @@ api/summary.ts     AI summary server function (key stays on the server)
 tests/             Vitest + hand_calcs.md (every benchmark worked by hand)
 platform-v1/       the team's v1 platform, unchanged, with its history
 docs/
+  GeoFound_Final_Report.pdf  final report (research format)
+  report/            report source: build_report.py (figures + HTML from data.json)
   DESIGN_SUMMARY.md  results for the report
   AI_AUDIT.md        errors in AI output that we caught and fixed
   AI_Log.pdf, AI_Audit.pdf   final AI log and engineering audit (PDF for submission)
