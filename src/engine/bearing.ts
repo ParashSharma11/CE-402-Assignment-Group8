@@ -100,6 +100,17 @@ export interface BearingInput {
   mode?: ShearMode;
   analysis?: Analysis;
   useDepthFactors?: boolean;
+  /**
+   * Which strength to use: 'base-layer' = layer at founding level (default);
+   * 'zone-average' = thickness-weighted c, φ, γ over the shear zone Df → Df + B (as the team's v1 engine does).
+   */
+  strength?: 'base-layer' | 'zone-average';
+  /**
+   * For 29° < φ < 36° in auto mode: 'capacity' = interpolate qnu between local and general results (default);
+   * 'factors' = interpolate Nc, Nq, Nγ linearly between their local (φ_local) and general (φ) values, with c and φ
+   *   (for the depth factors) interpolated the same way — the method of the team's v1 engine (Gaurav Dtyal).
+   */
+  transition?: 'capacity' | 'factors';
   /** Override soil parameters at founding level (else taken from the layer at Df). */
   c?: number; phi?: number; cu?: number; gamma?: number;
 }
@@ -121,7 +132,7 @@ export interface BearingResult {
   notes: string[];
 }
 
-function single(input: BearingInput, phi: number, c: number, label: 'general' | 'local'): Omit<BearingResult, 'modeUsed' | 'FS' | 'qns' | 'qsGross'> {
+function single(input: BearingInput, phi: number, c: number, label: 'general' | 'local', factorsOverride?: BearingFactors): Omit<BearingResult, 'modeUsed' | 'FS' | 'qns' | 'qsGross'> {
   const { footing, load = { P: 0 }, layers, zw, useDepthFactors = true } = input;
   const notes: string[] = [];
   const base = layerAt(layers, footing.Df + 1e-6);
@@ -164,7 +175,7 @@ function single(input: BearingInput, phi: number, c: number, label: 'general' | 
     return { analysis, B, L, Beff, Leff, eB, eL, areaEff, c: cu, phi: 0, q, gamma, Wp, factors: f, shape: sh, depth: { dc: d.dc, dq: d.dq, dg: d.dg }, incl: inc, terms: { cohesion, surcharge: 0, selfWeight: 0 }, qnu: cohesion, steps, notes };
   }
 
-  const f = bearingFactors(phi);
+  const f = factorsOverride ?? bearingFactors(phi);
   const d = useDepthFactors ? depthFactors(phi, footing.Df, B) : { dc: 1, dq: 1, dg: 1, Nphi: 1 };
   if (!useDepthFactors) notes.push('Depth factors set to 1 (backfill not assumed properly compacted).');
   const inc = inclinationFactors(alpha, phi);
@@ -197,17 +208,46 @@ function single(input: BearingInput, phi: number, c: number, label: 'general' | 
  * Auto: general shear for φ ≥ 36°, local for φ ≤ 29°, linear interpolation of qnu between.
  * SOURCE: IS 6403:1981 cl. 5.1.2 (mode of failure) — interpolation band TO VERIFY.
  */
-export function bearingCapacity(input: BearingInput): BearingResult {
+export function bearingCapacity(inputArg: BearingInput): BearingResult {
+  let input = inputArg;
   const FS = input.FS ?? 3;
   const base = layerAt(input.layers, input.footing.Df + 1e-6);
-  const c = input.c ?? base.c ?? 0;
-  const phi = input.phi ?? base.phi ?? 0;
+  let c = input.c ?? base.c ?? 0;
+  let phi = input.phi ?? base.phi ?? 0;
+  const zoneSteps: Step[] = [];
+  if (input.strength === 'zone-average' && input.c === undefined && input.phi === undefined) {
+    // Thickness-weighted average over Df → Df + B. SOURCE: common practice (influence depth ≈ B below base); team v1 engine — TO VERIFY.
+    const z0 = input.footing.Df, z1 = input.footing.Df + input.footing.B;
+    let H = 0, sc = 0, sp = 0, sg = 0;
+    for (const l of input.layers) {
+      const t = Math.min(l.bottom, z1) - Math.max(l.top, z0);
+      if (t <= 0) continue;
+      H += t; sc += t * (l.c ?? 0); sp += t * (l.phi ?? 0); sg += t * (l.gammaMoist ?? l.gammaSat);
+    }
+    if (H > 0) {
+      c = sc / H; phi = sp / H;
+      input = { ...input, gamma: input.gamma ?? sg / H };
+      zoneSteps.push(step({ title: 'Shear-zone average strength', equation: 'x̄ = Σ xi·ti / Σ ti over Df → Df + B', substituted: `zone ${n(z0, 2)}–${n(z1, 2)} m: c = ${n(c, 3)} kPa, φ = ${n(phi, 3)}°, γ = ${n(sg / H, 3)} kN/m³`, value: phi, unit: '°', source: 'influence depth ≈ B; team v1 engine — TO VERIFY' }));
+    }
+  }
   const mode = input.mode ?? 'auto';
   const isUndrained = (input.analysis ?? (base.behaviour === 'cohesive' ? 'undrained' : 'drained')) === 'undrained';
   let r: ReturnType<typeof single>;
   let modeUsed: BearingResult['modeUsed'];
   if (isUndrained || mode === 'general' || (mode === 'auto' && phi >= 36)) { r = single(input, phi, c, 'general'); modeUsed = 'general'; }
   else if (mode === 'local' || (mode === 'auto' && phi <= 29)) { const m = localShear(c, phi); r = single(input, m.phi, m.c, 'local'); modeUsed = 'local'; }
+  else if (input.transition === 'factors') {
+    // t = (φ − 29)/(36 − 29); N = N_local + t(N_general − N_local); φ_m, c_m interpolated likewise (φ_m used for Nφ in depth factors).
+    // SOURCE: IS 6403:1981 cl. 5.1.2 transition — TO VERIFY; method of the team's v1 engine (Gaurav Dtyal).
+    const t = (phi - 29) / (36 - 29);
+    const loc = localShear(c, phi);
+    const fl = bearingFactors(loc.phi), fg = bearingFactors(phi);
+    const fi: BearingFactors = { Nc: fl.Nc + t * (fg.Nc - fl.Nc), Nq: fl.Nq + t * (fg.Nq - fl.Nq), Ng: fl.Ng + t * (fg.Ng - fl.Ng) };
+    const phiM = loc.phi + t * (phi - loc.phi), cM = loc.c + t * (c - loc.c);
+    r = single(input, phiM, cM, 'general', fi);
+    r = { ...r, steps: [step({ title: 'Transition: interpolated factors (29° < φ < 36°)', equation: 'N = N_local + t(N_general − N_local), t = (φ − 29)/7; c_m, φ_m likewise', substituted: `t = ${n(t, 4)}: Nc ${n(fl.Nc, 2)}→${n(fi.Nc, 2)}, Nq ${n(fl.Nq, 2)}→${n(fi.Nq, 2)}, Nγ ${n(fl.Ng, 2)}→${n(fi.Ng, 2)}; φ_m = ${n(phiM, 3)}°`, value: fi.Nq, unit: '', source: `${SRC} cl. 5.1.2 — interpolation TO VERIFY` }), ...r.steps] };
+    modeUsed = 'interpolated';
+  }
   else {
     const g = single(input, phi, c, 'general');
     const m = localShear(c, phi);
@@ -222,5 +262,5 @@ export function bearingCapacity(input: BearingInput): BearingResult {
     step({ title: 'Net safe bearing capacity', equation: 'qns = qnu / FS', substituted: `qns = ${n(r.qnu, 2)} / ${n(FS, 2)}`, value: qns, unit: 'kPa', source: `${SRC} (FS = 3.0 per assignment)` }),
     step({ title: 'Gross safe bearing capacity', equation: 'qs = qns + q', substituted: `qs = ${n(qns, 2)} + ${n(r.q, 2)}`, value: qns + r.q, unit: 'kPa', source: 'net vs gross: q = effective overburden at Df' }),
   ];
-  return { ...r, modeUsed, FS, qns, qsGross: qns + r.q, steps };
+  return { ...r, modeUsed, FS, qns, qsGross: qns + r.q, steps: [...zoneSteps, ...steps] };
 }

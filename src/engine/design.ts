@@ -53,6 +53,8 @@ export interface DesignOptions extends PressureOptions {
   FS?: number;
   mode?: BearingInput['mode'];
   useDepthFactors?: boolean;
+  strength?: BearingInput['strength'];
+  transition?: BearingInput['transition'];
   /** Allowable total settlement for sizing, mm. */
   sAllow: number;
   /** Schmertmann time, years. */
@@ -64,7 +66,7 @@ export interface DesignOptions extends PressureOptions {
 }
 
 export function checkFooting(footing: Footing, load: Load, bh: Borehole, opt: DesignOptions): FootingCheck {
-  const bearing = bearingCapacity({ footing, load, layers: bh.layers, zw: bh.designWT, FS: opt.FS ?? 3, mode: opt.mode, useDepthFactors: opt.useDepthFactors });
+  const bearing = bearingCapacity({ footing, load, layers: bh.layers, zw: bh.designWT, FS: opt.FS ?? 3, mode: opt.mode, useDepthFactors: opt.useDepthFactors, strength: opt.strength, transition: opt.transition });
   const pr = appliedPressure(footing, load, bh, bearing.areaEff, opt);
   const sch = schmertmann({ footing, layers: bh.layers, zw: bh.designWT, netPressure: pr.qn, tYears: opt.tYears });
   const con = consolidationSettlement({ footing, layers: bh.layers, zw: bh.designWT, netPressure: pr.qn });
