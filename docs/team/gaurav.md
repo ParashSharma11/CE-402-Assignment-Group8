@@ -3,7 +3,7 @@
 Your v1 engine (`platform-v1/js/moduleP3_logic.js`) runs live in GeoFound's cross-check. The first comparison differed
 by 73 % (597.1 vs 345.0 kPa, BH-1, B = 3.2 m) because of two method choices — your shear-zone averaging of c, φ, γ and
 your interpolation of Nc, Nq, Nγ between local and general shear. Both are now options in v2, **your method is the
-default**, and v2 reproduces your 597.1 kPa exactly. See `docs/AI_AUDIT.md` item 6.
+default**, and v2 reproduces your 597.1 kPa exactly. See `docs/AI_AUDIT.md` item B6.
 
 ## 1. Settle the method from the code text and justify it (2–3 sentences in the report)
 - IS 6403:1981 wording for 29° < φ < 36°: interpolate the **factors**, the **strength**, or the **capacity**?

@@ -19,7 +19,7 @@ The final design now adds the stress from neighbouring footings in the clay (`fi
 offsets). Check one value by hand: Δσz at 6 m below B3's base caused by the B4 footing 5 m away, and note it in §9.
 
 ## 4. Pressure-bulb check
-The pressure-bulb labels were wrong in an earlier AI version (`docs/AI_AUDIT.md` item 2). Check two isobar depths on the
+The pressure-bulb labels were wrong in an earlier AI version (`docs/AI_AUDIT.md` item B2). Check two isobar depths on the
 Ground screen against your hand values and note the result in the audit.
 
 ## 5. Commit

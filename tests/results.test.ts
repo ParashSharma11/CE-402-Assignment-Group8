@@ -13,7 +13,7 @@ const state = {
 describe('project results (Mandi example)', () => {
   const r = computeResults(state);
   it('designs all 28 columns', () => expect(r.colResults.length).toBe(28));
-  it('final design keeps every footing inside the grid (AI audit item 1: overlap was not checked)', () => {
+  it('final design keeps every footing inside the grid (AI audit item B1: grid fit was not checked)', () => {
     const geo = r.checks.find((c) => c.name.startsWith('Footings fit the column grid'));
     expect(geo?.status).toBe('pass');
   });

@@ -70,7 +70,7 @@ export interface DesignOptions extends PressureOptions {
  * Water table for σ′v0 (and hence OCR = σ′p/σ′v0) in the consolidation analysis: the WT measured when the samples were
  * taken (October), consistent with σ′p from those samples. The August-high WT would lower σ′v0, inflate OCR and push
  * more of Δσ onto the flat recompression branch — unconservative. Bearing and Schmertmann keep the design (August) WT,
- * which is the conservative case for them. SOURCE: effective-stress principle; reviewer finding (docs/AI_AUDIT.md item 9).
+ * which is the conservative case for them. SOURCE: effective-stress principle; docs/AI_AUDIT.md item B10.
  */
 export const clayWT = (bh: Borehole): number => bh.measuredWT ?? bh.designWT;
 
