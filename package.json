@@ -1,0 +1,44 @@
+{
+  "name": "geofound",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "GeoFound — shallow foundation design to IS 6403 / IS 1904 (CE 402, IIT Mandi)",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.5",
+    "@types/node": "^26.6.10",
+    "@types/react": "^18.3.32",
+    "@types/react-dom": "^18.3.7",
+    "@types/three": "^0.169.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "playwright": "1.49",
+    "tailwindcss": "^4.3.5",
+    "typescript": "^5.9.3",
+    "vite": "^6.4.6",
+    "vitest": "^3.2.7"
+  },
+  "dependencies": {
+    "@google/genai": "^3.6.1",
+    "@radix-ui/react-checkbox": "^1.4.1",
+    "@radix-ui/react-slider": "^1.6.1",
+    "@radix-ui/react-switch": "^1.4.1",
+    "@radix-ui/react-tabs": "^1.2.1",
+    "@radix-ui/react-tooltip": "^1.4.1",
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "^8.18.0",
+    "framer-motion": "^11.18.2",
+    "lenis": "^1.3.28",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.30.6",
+    "three": "^0.169.0",
+    "zustand": "^5.1.0"
+  }
+}

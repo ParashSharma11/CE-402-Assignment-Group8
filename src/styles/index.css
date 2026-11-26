@@ -1,0 +1,126 @@
+@import "tailwindcss";
+
+/* ============================================================
+   GeoFound — "Core Sample" design tokens (approved direction D)
+   ============================================================ */
+@theme {
+  --color-ground: #140806;
+  --color-raised: #1c0d0a;
+  --color-raised-2: #241310;
+  --color-sunken: #0e0504;
+  --color-ink: #f4e8df;
+  --color-warm: #e9c2b8;
+  --color-muted: #a88a80;
+  --color-line: #4a3a34;
+  --color-line-soft: #2e1e19;
+  --color-accent: #ff4a1c;
+  --color-accent-soft: #ff4a1c26;
+  --color-pass: #8fd48a;
+  --color-warn: #ffc247;
+  --color-fail: #ff6b6b;
+  --color-water: #6cc4d6;
+  --color-soil-fill: #6b4535;
+  --color-soil-sm: #9a7550;
+  --color-soil-sp: #b89a68;
+  --color-soil-ci: #6a625e;
+  --color-soil-gw: #857565;
+
+  --font-display: var(--ff-display);
+  --font-giant: var(--ff-giant);
+  --font-sans: var(--ff-body);
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius-card: 20px;
+  --radius-ctl: 12px;
+
+  --ease-out-3: cubic-bezier(0.215, 0.61, 0.355, 1);
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Font pairings (switchable on /styleguide). A is the default. */
+:root, [data-font="a"] {
+  --ff-giant: "Tanker", "Sofia Sans Extra Condensed", Impact, sans-serif;
+  --ff-display: "Cabinet Grotesk", "Satoshi", system-ui, sans-serif;
+  --ff-body: "Satoshi", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+[data-font="b"] {
+  --ff-giant: "Clash Display", Impact, sans-serif;
+  --ff-display: "Clash Display", system-ui, sans-serif;
+  --ff-body: "General Sans", system-ui, sans-serif;
+}
+[data-font="c"] {
+  --ff-giant: "Tanker", Impact, sans-serif;
+  --ff-display: "Zodiak", Georgia, serif;
+  --ff-body: "Switzer", system-ui, sans-serif;
+}
+
+html { background: var(--color-ground); color-scheme: dark; }
+body {
+  /* transparent so the fixed live backdrop (z-index −10) shows; html keeps the ground colour */
+  background: transparent;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "ss02";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+::selection { background: var(--color-accent); color: var(--color-ground); }
+:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; border-radius: 6px; }
+
+/* Lenis */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-stopped { overflow: hidden; }
+
+/* Numbers always tabular */
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+/* HUD label */
+.hud { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-muted); }
+
+/* Fine 112.6° hairline stripes (Neuroform-style texture) */
+.stripes {
+  background-image: repeating-linear-gradient(112.6deg, rgb(244 232 223 / 0.035) 0 1px, transparent 1px 5px);
+}
+
+/* Card spotlight: follows --mx / --my set from JS */
+.spot {
+  position: relative;
+  isolation: isolate;
+}
+.spot::before {
+  content: "";
+  position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: -1;
+  background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), rgb(255 74 28 / 0.10), transparent 55%);
+  opacity: 0; transition: opacity 0.35s var(--ease-out-3);
+}
+.spot::after {
+  content: "";
+  position: absolute; inset: 0; border-radius: inherit; pointer-events: none; padding: 1px;
+  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), rgb(255 74 28 / 0.75), transparent 60%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  opacity: 0; transition: opacity 0.35s var(--ease-out-3);
+}
+.spot:hover::before, .spot:hover::after, .spot:focus-within::before, .spot:focus-within::after { opacity: 1; }
+
+/* Liquid headline reveal (blur + threshold), after Neuroform's titlefx */
+.liquid { filter: contrast(18); background: var(--color-ground); }
+.liquid.done { filter: none; }
+
+/* Range input fallback styling (Radix slider is used in the app) */
+input[type="number"]::-webkit-inner-spin-button { opacity: 0.4; }
+
+@keyframes gf-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}
+
+@media print {
+  html, body { background: #fff !important; color: #111 !important; }
+  .no-print { display: none !important; }
+  .print-only { display: block !important; }
+}
+.print-only { display: none; }
