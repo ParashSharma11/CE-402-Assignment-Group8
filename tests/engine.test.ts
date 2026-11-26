@@ -31,9 +31,9 @@ describe('§2 effective stress (P1)', () => {
 describe('§3 SPT corrections IS 2131 (P2)', () => {
   const [r] = correctSpt([{ depth: 1.5, N: 13 }], bh1.layers, 1.0);
   it('σ′v at 1.5 m', () => expect(r.sigmaVEff).toBeCloseTo(22.195, 2));
-  it('CN', () => expect(r.CN).toBeCloseTo(1.50517, 4));
-  it('N′ overburden', () => expect(r.N1).toBeCloseTo(19.567, 2));
-  it('N″ dilatancy applied (SM below WT)', () => { expect(r.dilatancyApplied).toBe(true); expect(r.Ncorr).toBeCloseTo(17.284, 2); });
+  it('CN uses the 25 kPa floor (σ′v = 22.2 < 25)', () => expect(r.CN).toBeCloseTo(1.46538, 4));
+  it('N′ overburden', () => expect(r.N1).toBeCloseTo(19.050, 2));
+  it('N″ dilatancy applied (SM below WT)', () => { expect(r.dilatancyApplied).toBe(true); expect(r.Ncorr).toBeCloseTo(17.025, 2); });
   it('refusal is not corrected', () => expect(correctSpt([{ depth: 12, N: 100, refusal: true }], bh1.layers, 1.0)[0].refusal).toBe(true));
 });
 

@@ -21,8 +21,11 @@ u = 9.81 × (7.225 − 2.6) = 45.371 kPa → **σ′v = 91.994 kPa**.
 
 ## 3. SPT correction — BH-1, N = 13 at 1.5 m, design WT 1.0 m
 σv = 9.9 + 0.4 × 18.0 + 0.5 × 20.0 = 27.10 kPa; u = 0.5 × 9.81 = 4.905 kPa; σ′v = **22.195 kPa**.
-CN = 0.77 log₁₀(2000 / 22.195) = 0.77 × 1.95477 = **1.50517**; N′ = 1.50517 × 13 = **19.567**.
-SM below WT and N′ > 15 → dilatancy: N″ = 15 + ½(19.567 − 15) = **17.284**.
+σ′v < 25 kPa, so the CN expression uses 25 kPa (Peck et al. 1974 relation valid only for σ′v ≥ 0.25 t/ft² ≈ 24 kPa;
+limit adopted from the team's v1 engine after the cross-check — see `docs/AI_AUDIT.md`):
+CN = 0.77 log₁₀(2000 / 25) = 0.77 × 1.90309 = **1.46538**; N′ = 1.46538 × 13 = **19.050**.
+SM below WT and N′ > 15 → dilatancy: N″ = 15 + ½(19.050 − 15) = **17.025**.
+(Without the 25 kPa floor the result would be CN = 1.50517, N′ = 19.567, N″ = 17.284.)
 
 ## 4. Direct shear least squares — SM soaked (50, 29.8), (100, 58.9), (150, 87.5)
 σ̄ = 100, τ̄ = 58.7333; Sxy = (−50)(−28.9333) + (50)(28.7667) = 2885.0; Sxx = 5000.
