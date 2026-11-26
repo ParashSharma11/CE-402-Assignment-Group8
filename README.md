@@ -73,6 +73,7 @@ platform-v1/       the team's v1 platform, unchanged, with its history
 docs/
   DESIGN_SUMMARY.md  results for the report
   AI_AUDIT.md        errors in AI output that we caught and fixed
+  AI_Log.pdf, AI_Audit.pdf   final AI log and engineering audit (PDF for submission)
   team/              one task file per member
 AI_LOG.md          AI use log, per session
 REFERENCES.md      every code, paper and book cited in the engine
