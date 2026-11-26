@@ -416,7 +416,7 @@
       '              <div>',
       '                <label for="p4-subdivision" class="block text-[11px] font-semibold text-slate-700 mb-1">Sub-Layer Step (m)</label>',
       '                <div class="relative">',
-      '                  <input id="p4-subdivision" type="number" step="0.1" min="0.1" max="5.0" data-p4-num="consolidationSubdivision_m" class="clean-num w-full rounded-lg border border-slate-300 bg-slate-50/50 focus:bg-white pl-2.5 pr-7 py-1.5 text-right font-mono text-xs text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all" />',
+      '                  <input id="p4-subdivision" type="number" step="0.05" min="0.1" max="0.5" data-p4-num="consolidationSubdivision_m" class="clean-num w-full rounded-lg border border-slate-300 bg-slate-50/50 focus:bg-white pl-2.5 pr-7 py-1.5 text-right font-mono text-xs text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all" />',
       '                  <span class="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-[10px] font-mono text-slate-400">m</span>',
       '                </div>',
       '              </div>',
@@ -2212,7 +2212,7 @@
     });
 
     // Responsive Plotly resizing on #btn-tab-p4 click & tab unhide MutationObserver
-    var p4TabBtn = document.getElementById("btn-tab-p4");
+    var p4TabBtn = document.getElementById("btn-tab-p5");
     if (p4TabBtn) {
       p4TabBtn.addEventListener("click", resizeP4Plots);
     }
@@ -2239,7 +2239,7 @@
    * Initializes Module P4 UI inside #tab-p4.
    */
   function init() {
-    var container = document.getElementById("tab-p4");
+    var container = document.getElementById("tab-p5");
     if (!container || !getState() || !getLogic()) {
       return;
     }

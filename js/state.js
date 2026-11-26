@@ -266,7 +266,7 @@
       loadInputMode: "Stress",                     // Options: "Stress", "Total Load"
       waterTableMode: "Design",                    // Options: "Design" (zw_design), "Measured" (zw_measured)
       stressDistributionMethod: "2:1 Dispersion",  // Options: "2:1 Dispersion", "Boussinesq Point Integration", "Westergaard"
-      elasticMethod: "IS 8009 / Janbu",            // Options: "IS 8009 / Janbu", "Schmertmann (1978)"
+      elasticMethod: "Schmertmann (1978)",            // Options: "IS 8009 / Janbu", "Schmertmann (1978)"
       poissonRatioDefault: 0.30,                   // Default drained Poisson's ratio (-)
       allowableSettlement_mm: 50.0,                // IS 1904:1986 Table 1 allowable total settlement limit (mm)
       overrideSoilParams: false,                   // false = use Module P1 profile; true = use manualSoilLayers

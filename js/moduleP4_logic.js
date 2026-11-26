@@ -532,7 +532,7 @@
       } else {
         // Source: Schmertmann, Hartman & Brown (1978) — Exact piecewise-linear
         // integration of Iz(z') across [z1, z2], split at z_peak to avoid peak clipping
-        if (sub.z_top < zSchmertLimit - DEPTH_TOL_M) {
+        if (!sub.isConsolidating && sub.z_top < zSchmertLimit - DEPTH_TOL_M) {
           var sBot = Math.min(sub.z_bot, zSchmertLimit);
           var z1 = Math.max(0.0, sub.z_top - Df_m);
           var z2 = Math.min(z_max, sBot - Df_m);
@@ -776,9 +776,9 @@
     if (
       !isFiniteNumber(consolidationSubdivision_m) ||
       consolidationSubdivision_m < 0.1 ||
-      consolidationSubdivision_m > 5.0
+      consolidationSubdivision_m > 0.5
     ) {
-      errors.push("Sub-layer discretization consolidationSubdivision_m must be between 0.10 m and 5.00 m.");
+      errors.push("Sub-layer discretization consolidationSubdivision_m must be between 0.10 m and 0.50 m.");
     }
     if (!isFiniteNumber(targetTime_days) || !(targetTime_days > 0)) {
       errors.push("Target consolidation time targetTime_days must be a finite number > 0 days.");
