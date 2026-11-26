@@ -18,7 +18,7 @@ function Md({ text, flag }: { text: string; flag: Set<string> }) {
   const lines = text.split('\n');
   return (
     <div className="grid gap-1.5 text-[15px] leading-relaxed text-warm">
-      {lines.map((l, i) => l.startsWith('- ') ? <div key={i} className="flex gap-2 pl-1"><span className="text-accent">•</span><span>{inline(l.slice(2), 'l' + i)}</span></div> : l.trim() === '' ? <div key={i} className="h-2" /> : <p key={i}>{inline(l, 'p' + i)}</p>)}
+      {lines.map((l, i) => /^\s*[-*] /.test(l) ? <div key={i} className="flex gap-2 pl-1"><span className="text-accent">•</span><span>{inline(l.replace(/^\s*[-*] /, ''), 'l' + i)}</span></div> : l.trim() === '' ? <div key={i} className="h-2" /> : <p key={i}>{inline(l, 'p' + i)}</p>)}
     </div>
   );
 }
