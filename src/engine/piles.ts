@@ -33,7 +33,9 @@ export interface PileOptions {
   /** Adhesion factor for clay. ASSUMED. */
   alpha?: number;
   FS?: number;
-  /** Concrete modulus, kPa (M25: 5000√fck MPa ≈ 25 GPa). */
+  /** Characteristic concrete strength fck, MPa (default 30 = M30). Ec = 5000√fck MPa. */
+  fck?: number;
+  /** Concrete modulus, kPa — overrides fck if given. */
   Ec?: number;
 }
 
@@ -101,7 +103,9 @@ export function designPileGroup(P: number, bh: Borehole, o: PileOptions): PileDe
   const spacing = 3 * o.D; // IS 2911: minimum 2.5–3 D — TO VERIFY
   const groupB = (nSide - 1) * spacing + o.D;
   const capB = groupB + 2 * 0.15; // 150 mm edge cover beyond piles
-  const Ec = o.Ec ?? 25e6;
+  const fck = o.fck ?? 30;
+  // SOURCE: IS 456:2000 cl. 6.2.3.1 — short-term static modulus Ec = 5000√fck (MPa); × 1000 → kPa
+  const Ec = o.Ec ?? 5000 * Math.sqrt(fck) * 1000;
   const Ap = (Math.PI * o.D * o.D) / 4;
   const Ppile = P / nPiles;
   const sElastic = (Ppile * s1.length) / (Ap * Ec);
@@ -112,7 +116,7 @@ export function designPileGroup(P: number, bh: Borehole, o: PileOptions): PileDe
   const steps = [...s1.steps,
     step({ title: 'Number of piles', equation: 'n = max(2, ⌈P / Q_safe⌉)', substituted: `max(2, ⌈${n(P, 1)} / ${n(s1.Qsafe, 1)}⌉)`, value: nPiles, unit: 'piles', source: `${SRC}; minimum 2 per column ASSUMED` }),
     step({ title: 'Pile cap (square)', equation: 'cap = (√n − 1)·3D + D + 2 × 0.15', substituted: `${nSide} × ${nSide} grid at ${n(spacing, 2)} m`, value: capB, unit: 'm', source: 'IS 2911 spacing ≥ 3D — TO VERIFY' }),
-    step({ title: 'Single-pile settlement', equation: 's1 = D/100 + P_pile·L/(Ap·Ec)', substituted: `${n(o.D, 2)}/100 + ${n(Ppile, 1)} × ${n(s1.length, 2)} / (${n(Ap, 4)} × ${n(Ec, 0)})`, value: sSingle * 1000, unit: 'mm', source: 'Tomlinson D/100 rule; Ec = 25 GPa (M25) ASSUMED — TO VERIFY' }),
+    step({ title: 'Single-pile settlement', equation: 's1 = D/100 + P_pile·L/(Ap·Ec)', substituted: `${n(o.D, 2)}/100 + ${n(Ppile, 1)} × ${n(s1.length, 2)} / (${n(Ap, 4)} × ${n(Ec, 0)})`, value: sSingle * 1000, unit: 'mm', source: `Tomlinson D/100 rule; Ec = 5000√fck (IS 456:2000 cl. 6.2.3.1), M${fck}` }),
     step({ title: 'Group settlement', equation: 's_g = s1·√(Bg / D)', substituted: `${n(sSingle * 1000, 2)} × √(${n(groupB, 2)} / ${n(o.D, 2)})`, value: (sSingle * groupFactor) * 1000, unit: 'mm', source: 'Vesic (1969) group factor — TO VERIFY' }),
   ];
   return { ...s1, nPiles, capB, sElastic, sRaft, sTotal, steps, ok: true };

@@ -123,7 +123,7 @@ export function computeResults(s: ProjectState): ProjectResults {
   try {
     final = finalDesign(columns.filter((c) => bhById.has(c.boreholeId) && !perBH[c.boreholeId]?.errors.length), s.boreholes, p.limits, {
       ...opt, Df: p.Df, sx, sy, clearance: 0.3, alternative: p.alternative ?? 'piles-zone',
-      pile: { D: p.pileD ?? 0.5, cutoff: p.Df, socket: p.pileSocket ?? 1.5 },
+      pile: { D: p.pileD ?? 0.5, cutoff: p.Df, socket: p.pileSocket ?? 1.5, fck: p.fck ?? 30 },
     });
   } catch (e) { errors.push(`Final design: ${(e as Error).message}`); }
 
@@ -167,7 +167,8 @@ export function computeResults(s: ProjectState): ProjectResults {
     { item: 'Settlement limits', value: `${lim.maxTotal} mm; δ ≤ ${lim.maxDiffRatio ?? '–'}·L; β ≤ 1/${Math.round(1 / lim.maxAngular)}`, reason: 'RC framed building on isolated footings', source: lim.source },
     { item: 'Clay sublayers', value: '≤ 0.5 m, Δσ under footing centre (Boussinesq)', reason: 'Assignment P5', source: 'Das (2014) Ch. 11' },
     { item: 'Footing proportioning', value: final?.target ? `equal settlement, s* = ${(final.target * 1000).toFixed(1)} mm` : 'smallest size passing bearing + settlement', reason: 'Sizing every footing to its minimum makes neighbours settle differently; equal settlement keeps δ and β within IS 1904', source: 'Terzaghi & Peck (1967); Tomlinson — TO VERIFY' },
-    { item: 'Pile design', value: `bored cast-in-situ Ø${p.pileD ?? 0.5} m, socket ${p.pileSocket ?? 1.5} m into the bearing stratum, ≥ 2 piles per column, FS 2.5`, reason: 'End bearing in very dense gravel below the soft clay; K = 1.5, α = 1.0, Ec = 25 GPa ASSUMED', source: 'IS 2911 (Part 1/Sec 2) — TO VERIFY' },
+    { item: 'Pile design', value: `bored cast-in-situ Ø${p.pileD ?? 0.5} m, socket ${p.pileSocket ?? 1.5} m into the bearing stratum, ≥ 2 piles per column, FS 2.5`, reason: 'End bearing in very dense gravel below the soft clay; K = 1.5, α = 1.0 ASSUMED', source: 'IS 2911 (Part 1/Sec 2) — TO VERIFY' },
+    { item: 'Concrete grade (footings, piles)', value: `M${p.fck ?? 30} (Ec = ${(5 * Math.sqrt(p.fck ?? 30)).toFixed(1)} GPa), cover ≥ 50 mm to footings`, reason: 'Mandi: heavy monsoon rain and a seasonally rising water table → foundations alternately wetted and dried = "severe" exposure; minimum RCC grade for severe is M30, nominal cover 45 mm, and footings need ≥ 50 mm', source: 'IS 456:2000 Table 3, Table 5, cl. 26.4.2, 26.4.2.2' },
     { item: 'Schmertmann time', value: `${p.tYears} yr (C2)`, reason: 'End of construction', source: 'Schmertmann et al. (1978)' },
   ];
   if (oed) assumptions.push({ item: 'Oedometer interpretation', value: `Cc ${oed.Cc.toFixed(3)}, Cr ${oed.Cr.toFixed(3)}, σ′p ${oed.sigmaP.toFixed(0)} kPa`, reason: 'Lab pressures converted from kg/cm² (×98.0665); σ′p by Casagrande (scale-dependent)', source: 'Das (2014) §11.5–11.6' });

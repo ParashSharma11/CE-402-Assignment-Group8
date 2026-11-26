@@ -67,6 +67,14 @@ IS 6403 says "interpolate" — v1 interpolates Nc, Nq, Nγ between local and gen
 The team adopted v1's method as the default and states it in the assumptions table. Effect on the Mandi design: BH-1
 footings 2.65–3.00 m instead of 3.15–3.70 m; BH-3 still fails (piles).
 
+### 7. Concrete grade M25 ignored Mandi's exposure condition
+**AI output.** The pile module assumed M25 concrete (Ec = 25 GPa) without considering durability.
+**Detection.** Harshit Pandey (reviewing the design): Mandi has heavy monsoon rain and a seasonally rising water table, so
+the foundations are alternately wetted and dried, which is "severe" exposure under IS 456:2000 Table 3.
+**Correction.** IS 456 Table 5 requires a minimum of M30 for RCC in severe exposure (nominal cover 45 mm, Table 16; footings
+≥ 50 mm, cl. 26.4.2.2). fck is now an input (default 30) and Ec = 5000√fck (cl. 6.2.3.1) = 27.4 GPa. Effect: worst pile
+settlement 13.6 → 13.3 mm; every check still passes.
+
 ---
 
 **General weakness (all items above).** The AI wrote IS clause numbers it could not check against the code text. Every

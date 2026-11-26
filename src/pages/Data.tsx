@@ -70,6 +70,7 @@ function ProjectStep() {
         <Select label="29°–36° transition" value={p.transition ?? 'factors'} onChange={(v) => set({ transition: v as 'factors' | 'capacity' })} options={[{ value: 'factors', label: 'Interpolate factors (team v1)' }, { value: 'capacity', label: 'Interpolate qnu' }]} />
         <Field label="Pile diameter (alternative)" unit="m" value={p.pileD ?? 0.5} onChange={(v) => set({ pileD: v ?? 0.5 })} />
         <Field label="Pile socket into bearing stratum" unit="m" value={p.pileSocket ?? 1.5} onChange={(v) => set({ pileSocket: v ?? 1.5 })} />
+        <Field label="Concrete grade fck (IS 456 Table 5: severe → M30)" unit="MPa" value={p.fck ?? 30} onChange={(v) => set({ fck: v ?? 30 })} />
         <Select label="Where isolated footings fail" value={p.alternative ?? 'piles-zone'} onChange={(v) => set({ alternative: v as 'piles-zone' | 'piles-all' })} options={[{ value: 'piles-zone', label: 'Piles in that zone + movement joint' }, { value: 'piles-all', label: 'Piles under the whole building' }]} className="sm:col-span-2" />
         <Field label="Schmertmann time t" unit="yr" value={p.tYears} onChange={(v) => set({ tYears: v ?? 0.1 })} />
         <Field label="γ footing + backfill" unit="kN/m³" value={p.gammaFB} onChange={(v) => set({ gammaFB: v ?? 20 })} />
