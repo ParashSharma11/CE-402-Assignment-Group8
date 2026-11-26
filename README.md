@@ -1,45 +1,63 @@
-# GeoFound
+# CE-402 Assignment — Group 8 · GeoFound
 
-Shallow-foundation design in the browser — IS 6403:1981 bearing capacity, IS 2131 SPT corrections,
-Boussinesq / 2:1 stress increase, Schmertmann and 1-D consolidation settlement, and IS 1904 building checks.
-CE 402 Geotechnical Engineering, IIT Mandi — Group 8.
+Shallow-foundation design in the browser for the CE 402 (Geotechnical Engineering, IIT Mandi) assignment:
+IS 2131 SPT corrections, direct-shear least squares, IS 6403:1981 bearing capacity, Boussinesq / 2:1 stress increase,
+Schmertmann (1978) and 1-D consolidation settlement, and IS 1904 building checks — every equation with its source.
 
-**Live app:** _to be added after deployment_
+**Live app (v2):** _Vercel URL — added after deployment_
+**v1 platform:** https://parashsharma11.github.io/CE-402-Assignment-Group8/ (GitHub Pages, from `main`)
 
-Nothing about the Mandi site is hard-coded: every input (profile, water tables, lab data, grid, loads, limits)
-can be changed, and the Mandi data loads only from `src/examples/mandi.ts` via **Open Mandi example**.
+## Two versions, one team
+| | v1 — GeoTech Analytics | v2 — GeoFound |
+|---|---|---|
+| Where | `platform-v1/` | repo root (`src/`, `api/`, `tests/`) |
+| Stack | Vanilla JS, Tailwind, Plotly (no build step) | React + TypeScript (Vite), Vitest, Vercel |
+| Engines | P1–P5 by the team (below) | own TypeScript engine **plus the v1 engines, run live as a cross-check** |
 
-## Run it locally
-Requires Node 20+.
+The project began as a Python/Streamlit prototype (17–18 Nov), moved to the client-side v1 platform (21 Nov), and v2
+was added on 26 Nov. v2 does not replace the team's engines — it calls them: `src/team/bridge.ts` loads
+`platform-v1/js/*_logic.js` unchanged, the Calculations screen shows "Team engine cross-check", and
+`tests/crosscheck.test.ts` checks that the two implementations agree.
+
+| Module | v1 engine author | v1 ↔ v2 |
+|---|---|---|
+| P1 Soil profile | Parash Sharma | v1 validates every v2 profile |
+| P2 SPT + direct shear | Parash Sharma | identical (v2 corrected to match v1 — see `docs/AI_AUDIT.md`) |
+| P3 Bearing capacity (IS 6403) | Gaurav Dtyal (engine), Muvan (UI) | identical with the team method (default) |
+| P4 Stress increase | Namit Mehta | identical |
+| P5 Settlement | Muvan (engine), Namit Mehta (UI) | U(Tv) identical |
+
+## Run v2 locally
+Node 20+.
 ```bash
 npm install
-npm run dev        # http://localhost:5173
-npm test           # Vitest: hand-calculation benchmarks + end-to-end design run
-npm run build      # type-check + production build into dist/
+npm run dev        # http://localhost:5173 → "Open Mandi example"
+npm test           # hand-calculation benchmarks, v1 cross-checks, end-to-end design run
+npm run build      # type-check + production build
 ```
-The AI summary needs a free Google AI Studio key in a Vercel environment variable (`GEMINI_API_KEY`,
-optional `GEMINI_MODEL`). Without it, the Summary page uses the deterministic template summary.
+v1 needs no build: open `platform-v1/index.html` in a browser.
 
-## What is where
-| Path | Contents |
-|---|---|
-| `src/engine/` | Pure TypeScript calculation engine (P1–P5), every equation with a `// SOURCE:` comment |
-| `src/examples/mandi.ts` | The assignment's site data — the only place site values live |
-| `tests/` | Vitest suites; `tests/hand_calcs.md` derives every benchmark number by hand |
-| `src/pages/` | Landing, Enter data, Ground model, Calculations (+ quick calculator), Design, Summary |
-| `api/summary.ts` | Vercel function — Gemini free tier, key server-side only |
-| `REFERENCES.md` | Every source cited in the code |
-| `AI_LOG.md` | AI use log (date, tool, purpose, prompts, accepted/changed/rejected) |
+The AI summary on v2's Summary page uses the Google Gemini free tier through a server function (`api/summary.ts`,
+key in the Vercel environment variable `GEMINI_API_KEY`). Without a key it falls back to a deterministic template.
 
-## Modules
-P1 soil profile with measured and design WT · P2 SPT corrections and direct-shear least squares, UU, oedometer ·
-P3 IS 6403 for strip, square, rectangle, circle; general/local shear; all factors shown; W′; eccentric loads ·
-P4 Boussinesq centre/corner and 2:1, Δσz vs depth · P5 Schmertmann (1978), NC/OC consolidation with ≤ 0.5 m
-sublayers, time–settlement with single/double drainage · P8 this repo.
+## Structure
+```text
+├── src/engine/          v2 calculation engine (pure TypeScript, // SOURCE: on every equation)
+├── src/examples/        Mandi site data — the only place site values live
+├── src/team/            bridge to the v1 engines
+├── src/pages, components   v2 screens
+├── api/summary.ts       AI summary (server-side key)
+├── tests/               Vitest + tests/hand_calcs.md (every benchmark derived by hand)
+├── platform-v1/         the team's v1 platform, unchanged, with full history
+├── docs/AI_AUDIT.md     AI errors we caught (max two pages)
+├── docs/team/           one task file per member
+├── AI_LOG.md            AI use log
+└── REFERENCES.md        every source cited in the code
+```
 
-## Team
-_Add names, roll numbers and GitHub handles — every member must commit (assignment P8)._
+## Engineering standards
+SI units throughout (kN, kPa, m, mm, kN/m³); γw = 9.81 kN/m³; nothing site-specific hard-coded outside
+`src/examples/`; every clause not yet checked against the code text is marked **TO VERIFY** (amber in the app).
 
-## Stack
-React 18 · Vite · TypeScript · Tailwind CSS 4 · Framer Motion · Lenis · Radix UI · react-three-fiber · Zustand ·
-Vitest · Playwright · Vercel · Google Gemini (free tier).
+## Team (Group 8)
+Parash Sharma · Gaurav Dtyal · Muvan · Namit Mehta · _(add the fifth member)_ — see `docs/team/` for each member's part.

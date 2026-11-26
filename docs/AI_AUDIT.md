@@ -1,6 +1,7 @@
 # AI audit — engineering errors and weaknesses found in AI output
 
-**DRAFT prepared by Claude Code for the team to verify, edit and own.** CE 402, Group 8. Max two pages.
+**DRAFT prepared by Claude Code for the team to verify, edit and own.** CE 402, Group 8. Max two pages —
+choose the strongest items (5 and 6 come from cross-checking against our own v1 engines and are the most convincing).
 Each item: what the AI produced → how we detected the problem → our correction. All items are real and traceable in
 the git history of this repository.
 
@@ -46,6 +47,25 @@ We also noted that Casagrande's construction depends on plot scale (the bisector
 **Correction.** The choice (last three loading points) is stated in the code and in the assumptions table; the test
 asserts a band (110–119 kPa) rather than a false-precision value; σ′p is shown as an editable estimate the engineer
 can override. Unit conversion kg/cm² → kPa (×98.0665) is applied before the fit and tested.
+
+### 5. SPT overburden correction applied to clay — caught by our own v1 engine
+**AI output.** GeoFound's `correctSpt` (`src/engine/spt.ts`) applied CN = 0.77 log₁₀(2000/σ′v) to every SPT record,
+including the soft CI clay in BH-1 (e.g. N = 6 at 6.0 m → N′ = 6.8).
+**Detection.** Benchmark against an independent implementation: the cross-check test (`tests/crosscheck.test.ts`) ran the
+team's v1 engine (`platform-v1/js/moduleP2_logic.js`, Parash Sharma), which leaves clay N uncorrected (CN = 1). IS 2131's
+overburden and dilatancy corrections are for cohesionless soils.
+**Correction.** Corrections now apply only to granular/fill layers; clay rows show "no overburden correction". The same
+cross-check also made us adopt v1's lower limit σ′v ≥ 25 kPa in the CN expression (Peck et al. relation valid from
+≈ 24 kPa), which changes N″ at 1.5 m in BH-1 from 17.28 to 17.03 (`tests/hand_calcs.md` §3 updated).
+
+### 6. Same code, two readings of the local–general shear transition (73 % apart)
+**AI output.** For BH-1, B = 3.2 m, GeoFound gave qnu = 345.0 kPa; the team's v1 engine (Gaurav Dtyal) gave 597.1 kPa.
+**Detection.** Cross-check test, then term-by-term comparison. Two method choices differ: (a) soil strength — v1 averages
+c, φ, γ over the shear zone Df → Df + B (φ = 31.8°), GeoFound used the founding layer (φ = 30.0°); (b) for 29° < φ < 36°
+IS 6403 says "interpolate" — v1 interpolates Nc, Nq, Nγ between local and general values, GeoFound interpolated qnu.
+**Correction.** Both choices are now explicit options; with v1's choices GeoFound reproduces 597.1 kPa exactly (test).
+The team adopted v1's method as the default and states it in the assumptions table. Effect on the Mandi design: BH-1
+footings 2.65–3.00 m instead of 3.15–3.70 m; BH-3 still fails (piles).
 
 ---
 
