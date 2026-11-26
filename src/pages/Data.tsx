@@ -7,6 +7,41 @@ import { SoilColumn } from '../components/viz';
 import { useProject, rowLabel } from '../store/project';
 import { useResults } from '../hooks/useResults';
 import { loadFactor, type SoilLayer, type SoilBehaviour, type ShearMode } from '../engine';
+import { boreholesToCsv, csvToBoreholes } from '../lib/csv';
+
+const download = (name: string, text: string, type: string) => {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+};
+const pickFile = (accept: string, onText: (t: string, name: string) => void) => {
+  const i = document.createElement('input'); i.type = 'file'; i.accept = accept;
+  i.onchange = () => { const f = i.files?.[0]; if (f) f.text().then((t) => onText(t, f.name)); };
+  i.click();
+};
+
+function CsvCard() {
+  const bhs = useProject((s) => s.boreholes), replace = useProject((s) => s.replaceBoreholes);
+  const [msg, setMsg] = useState<{ ok: boolean; lines: string[] } | null>(null);
+  return (
+    <Card className="p-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="max-w-xl">
+          <div className="hud mb-2">upload borehole data · CSV (Excel / Google Sheets)</div>
+          <p className="text-[13px] leading-relaxed text-warm">One file for all boreholes: a <span className="num text-ink">borehole</span> row (water tables), one <span className="num text-ink">layer</span> row per stratum and one <span className="num text-ink">spt</span> row per test. Units are in the column names. Download the template, fill it in, then import — it replaces the boreholes below.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="secondary" label="Download template" onClick={() => download('geofound-boreholes.csv', boreholesToCsv(bhs), 'text/csv')} />
+          <Button size="sm" label="Import CSV" onClick={() => pickFile('.csv,text/csv', (t, name) => {
+            const r = csvToBoreholes(t);
+            if (r.errors.length) setMsg({ ok: false, lines: r.errors.slice(0, 8) });
+            else { replace(r.boreholes); setMsg({ ok: true, lines: [`${name}: imported ${r.boreholes.length} borehole(s), ${r.boreholes.reduce((a, b) => a + b.layers.length, 0)} layers, ${r.boreholes.reduce((a, b) => a + b.spt.length, 0)} SPT readings.`] }); }
+          })} />
+        </div>
+      </div>
+      {msg && <div className={`mt-4 rounded-xl border px-4 py-3 text-[13px] ${msg.ok ? 'border-pass/40 text-pass' : 'border-fail/40 text-fail'}`}>{msg.lines.map((l) => <div key={l}>{l}</div>)}{!msg.ok && <div className="mt-1 text-warm">Nothing was changed. Fix the rows above and import again.</div>}</div>}
+    </Card>
+  );
+}
 
 const STEPS = ['Project', 'Building & loads', 'Boreholes', 'Lab tests', 'Review'];
 
@@ -115,6 +150,7 @@ function BoreholeStep() {
   return (
     <div className="grid gap-4 xl:grid-cols-[1fr_340px]">
       <div className="grid min-w-0 gap-4">
+        <CsvCard />
         <div className="flex flex-wrap items-center gap-2">
           {bhs.map((b) => (
             <button key={b.id} onClick={() => setSel(b.id)} className={`rounded-full border px-4 py-2 font-mono text-[12px] transition-colors ${b.id === bh.id ? 'border-accent bg-accent/15 text-ink' : 'border-line-soft text-muted hover:border-line hover:text-ink'}`}>{b.id}</button>
@@ -263,6 +299,10 @@ function ReviewStep() {
       <Card className="flex flex-col justify-between gap-6 p-6">
         <p className="font-display text-[24px] font-bold leading-tight">See the ground model and the calculations.</p>
         <div className="flex flex-wrap gap-2"><Button label="Ground model" icon={<Arrow />} onClick={() => nav('/ground')} /><Chip>auto-saved in this browser</Chip></div>
+        <div className="flex flex-wrap gap-2 border-t border-line-soft pt-4">
+          <Button size="sm" variant="secondary" label="Save project file" onClick={() => download(`${(s.project.name || 'geofound').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.geofound.json`, JSON.stringify({ app: 'GeoFound', version: 1, project: s.project, building: s.building, boreholes: s.boreholes, lab: s.lab }, null, 2), 'application/json')} />
+          <Button size="sm" variant="secondary" label="Open project file" onClick={() => pickFile('.json,application/json', (t) => { try { const d = JSON.parse(t); if (d.app !== 'GeoFound') throw new Error('not a GeoFound file'); s.importProject(d); } catch (e) { alert(`Could not open: ${(e as Error).message}`); } })} />
+        </div>
       </Card>
     </div>
   );

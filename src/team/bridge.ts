@@ -2,9 +2,10 @@
  * Bridge to the team's v1 calculation engines (platform-v1/js, unchanged):
  *   P1 profile validation  — Parash Sharma      (ModuleP1Logic)
  *   P2 SPT + direct shear  — Parash Sharma      (ModuleP2Logic)
- *   P3 IS 6403 bearing     — Gaurav Dtyal       (ModuleP3Logic; UI by Muvan)
+ *   P3 IS 6403 bearing     — Gaurav Dtyal       (ModuleP3Logic)
  *   P4 stress increase     — Namit Mehta        (ModuleP4StressLogic)
- *   P5 settlement / U(Tv)  — Muvan (engine), Namit (UI) (ModuleP4Logic)
+ *   P5 settlement / U(Tv)  — Muvan              (ModuleP4Logic)
+ * GeoFound v2 UI/UX, front-end, integration and deployment — Harshit Pandey.
  * GeoFound (v2) runs these on the same inputs as its own TypeScript engine and shows both,
  * so every number is cross-checked by two independent implementations.
  */
@@ -21,7 +22,7 @@ const W = (globalThis as any).window ?? globalThis;
 const P1 = () => W.ModuleP1Logic, P2 = () => W.ModuleP2Logic, P3 = () => W.ModuleP3Logic, P4 = () => W.ModuleP4Logic, P4S = () => W.ModuleP4StressLogic;
 
 export const TEAM_CREDITS = {
-  P1: 'Parash Sharma', P2: 'Parash Sharma', P3: 'Gaurav Dtyal (engine) · Muvan (UI)', P4: 'Namit Mehta', P5: 'Muvan (engine) · Namit Mehta (UI)',
+  P1: 'Parash Sharma', P2: 'Parash Sharma', P3: 'Gaurav Dtyal', P4: 'Namit Mehta', P5: 'Muvan',
 } as const;
 
 /** m²/yr → mm²/s (v1 stores cv in mm²/s). */

@@ -53,6 +53,8 @@ export interface ProjectState {
   updateBorehole: (id: string, patch: Partial<Borehole>) => void;
   addBorehole: () => void;
   removeBorehole: (id: string) => void;
+  replaceBoreholes: (bhs: Borehole[]) => void;
+  importProject: (data: Partial<Pick<ProjectState, 'project' | 'building' | 'boreholes' | 'lab'>>) => void;
   updateLayer: (bhId: string, i: number, patch: Partial<SoilLayer>) => void;
   addLayer: (bhId: string) => void;
   removeLayer: (bhId: string, i: number) => void;
@@ -103,6 +105,13 @@ export const useProject = create<ProjectState>()(
         return { boreholes: [...s.boreholes, blankBorehole(`BH-${k}`)] };
       }),
       removeBorehole: (id) => set((s) => ({ boreholes: s.boreholes.filter((b) => b.id !== id) })),
+      replaceBoreholes: (bhs) => set((s) => {
+        // keep zoning valid: zones pointing to a borehole that no longer exists move to the first imported one
+        const ids = new Set(bhs.map((b) => b.id));
+        const zoning = s.building.zoning.map((z) => (ids.has(z.bh) ? z : { ...z, bh: bhs[0]?.id ?? z.bh }));
+        return { boreholes: bhs, building: { ...s.building, zoning }, quick: { ...s.quick, bh: ids.has(s.quick.bh) ? s.quick.bh : bhs[0]?.id ?? s.quick.bh } };
+      }),
+      importProject: (d) => set((s) => ({ project: { ...s.project, ...d.project }, building: { ...s.building, ...d.building }, boreholes: d.boreholes ?? s.boreholes, lab: { ...s.lab, ...d.lab } })),
       updateLayer: (bhId, i, patch) => set((s) => ({
         boreholes: s.boreholes.map((b) => {
           if (b.id !== bhId) return b;

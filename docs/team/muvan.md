@@ -1,4 +1,4 @@
-# Muvan — P5 settlement engine (and P3 UI in v1)
+# Muvan — P5 settlement engine
 
 Your v1 settlement engine (`platform-v1/js/moduleP4_logic.js`) is cross-checked by GeoFound: Terzaghi U(Tv) agrees to
 four decimals. v1 also offers IS 8009 / Janbu elastic settlement and Westergaard stress, which v2 does not — worth a

@@ -24,15 +24,16 @@ export default function App() {
       <SmoothScroll />
       {loc.pathname !== '/' && (
         <div aria-hidden className="no-print pointer-events-none fixed inset-0 -z-10">
-          <ShaderBackdrop tone={0.6} scale={0.4} className="opacity-80" />
+          <ShaderBackdrop tone={0.6} scale={0.33} fps={30} className="opacity-80" />
           <div className="absolute inset-0 bg-gradient-to-b from-ground/30 via-transparent to-ground/60" />
         </div>
       )}
       <Grain />
       <Nav />
       <Suspense fallback={<div className="hud grid min-h-[60vh] place-items-center">loading…</div>}>
-        <AnimatePresence mode="wait">
-          <Routes location={loc} key={loc.pathname}>
+        {/* No exit-wait: AnimatePresence mode="wait" could freeze when links were clicked during a transition
+            (URL changed but the old page stayed). Each page now mounts at once and plays its own entrance wipe. */}
+        <Routes location={loc} key={loc.pathname}>
             <Route path="/" element={<Landing ready={!loading} />} />
             <Route path="/data" element={<Data />} />
             <Route path="/ground" element={<Ground />} />
@@ -41,8 +42,7 @@ export default function App() {
             <Route path="/summary" element={<Summary />} />
             <Route path="/styleguide" element={<Styleguide />} />
             <Route path="*" element={<Landing ready={!loading} />} />
-          </Routes>
-        </AnimatePresence>
+        </Routes>
       </Suspense>
       <Footer />
     </>

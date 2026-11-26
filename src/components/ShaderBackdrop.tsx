@@ -39,7 +39,7 @@ void main(){
 }`;
 const VERT = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
 
-export default function ShaderBackdrop({ className = '', scale = 0.5, tone = 1 }: { className?: string; scale?: number; tone?: number }) {
+export default function ShaderBackdrop({ className = '', scale = 0.5, tone = 1, fps = 60 }: { className?: string; scale?: number; tone?: number; fps?: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const cv = ref.current; if (!cv) return;
@@ -63,8 +63,10 @@ export default function ShaderBackdrop({ className = '', scale = 0.5, tone = 1 }
     };
     const onMove = (e: PointerEvent) => { const b = cv.getBoundingClientRect(); mouse.tx = (e.clientX - b.left) / b.width; mouse.ty = 1 - (e.clientY - b.top) / b.height; };
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let visible = true, raf = 0; const t0 = performance.now();
+    let visible = true, raf = 0, last = 0; const t0 = performance.now(); const minDt = 1000 / fps;
     const draw = (now: number) => {
+      if (!reduce && now - last < minDt) { raf = requestAnimationFrame(draw); return; }
+      last = now;
       resize();
       mouse.x += (mouse.tx - mouse.x) * 0.05; mouse.y += (mouse.ty - mouse.y) * 0.05;
       gl.uniform1f(uT, reduce ? 12 : (now - t0) / 1000);
@@ -79,6 +81,6 @@ export default function ShaderBackdrop({ className = '', scale = 0.5, tone = 1 }
     window.addEventListener('pointermove', onMove);
     raf = requestAnimationFrame(draw);
     return () => { cancelAnimationFrame(raf); io.disconnect(); document.removeEventListener('visibilitychange', onVis); window.removeEventListener('pointermove', onMove); };
-  }, [scale, tone]);
+  }, [scale, tone, fps]);
   return <canvas ref={ref} aria-hidden className={`pointer-events-none absolute inset-0 h-full w-full ${className}`} />;
 }

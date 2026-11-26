@@ -1,4 +1,4 @@
-# Repo integrator — integration, deployment, documentation
+# Harshit Pandey — GeoFound UI/UX and front-end, integration, deployment, documentation
 
 1. Push the `geofound` branch (done from this machine) and share `docs/team/README.md` with the team.
 2. Deploy to Vercel from the `geofound` branch; add `GEMINI_API_KEY` in Vercel → Settings → Environment Variables.

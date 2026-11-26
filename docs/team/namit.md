@@ -1,4 +1,4 @@
-# Namit Mehta — P4 stress increase (and P5 settlement UI in v1)
+# Namit Mehta — P4 stress increase
 
 Your v1 stress module (`platform-v1/js/moduleP4_stress_logic.js`) agrees with v2 to six decimals for centre, corner
 and 2:1 at every depth tested (`tests/crosscheck.test.ts`, P4 row) and runs live in the Calculations cross-check.

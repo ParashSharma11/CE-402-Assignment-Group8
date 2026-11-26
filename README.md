@@ -23,9 +23,9 @@ was added on 26 Nov. v2 does not replace the team's engines — it calls them: `
 |---|---|---|
 | P1 Soil profile | Parash Sharma | v1 validates every v2 profile |
 | P2 SPT + direct shear | Parash Sharma | identical (v2 corrected to match v1 — see `docs/AI_AUDIT.md`) |
-| P3 Bearing capacity (IS 6403) | Gaurav Dtyal (engine), Muvan (UI) | identical with the team method (default) |
+| P3 Bearing capacity (IS 6403) | Gaurav Dtyal | identical with the team method (default) |
 | P4 Stress increase | Namit Mehta | identical |
-| P5 Settlement | Muvan (engine), Namit Mehta (UI) | U(Tv) identical |
+| P5 Settlement | Muvan | U(Tv) identical |
 
 ## Run v2 locally
 Node 20+.
@@ -45,7 +45,7 @@ key in the Vercel environment variable `GEMINI_API_KEY`). Without a key it falls
 ├── src/engine/          v2 calculation engine (pure TypeScript, // SOURCE: on every equation)
 ├── src/examples/        Mandi site data — the only place site values live
 ├── src/team/            bridge to the v1 engines
-├── src/pages, components   v2 screens
+├── src/pages, components   v2 screens (UI: Harshit Pandey)
 ├── api/summary.ts       AI summary (server-side key)
 ├── tests/               Vitest + tests/hand_calcs.md (every benchmark derived by hand)
 ├── platform-v1/         the team's v1 platform, unchanged, with full history
@@ -60,4 +60,12 @@ SI units throughout (kN, kPa, m, mm, kN/m³); γw = 9.81 kN/m³; nothing site-sp
 `src/examples/`; every clause not yet checked against the code text is marked **TO VERIFY** (amber in the app).
 
 ## Team (Group 8)
-Parash Sharma · Gaurav Dtyal · Muvan · Namit Mehta · _(add the fifth member)_ — see `docs/team/` for each member's part.
+| Member | Contribution |
+|---|---|
+| **Harshit Pandey** | UI/UX design and front-end of GeoFound (v2), visual direction, motion, integration of the team engines, deployment |
+| **Parash Sharma** | P1 soil profile and P2 SPT / direct-shear engines, v1 platform architecture |
+| **Gaurav Dtyal** | P3 IS 6403 bearing-capacity engine |
+| **Muvan** | P5 settlement engine (IS 8009, Schmertmann, consolidation) |
+| **Namit Mehta** | P4 stress-increase (Boussinesq / 2:1) module |
+
+See `docs/team/` for each member's verification task.

@@ -7,6 +7,7 @@ Errors found in AI output are written up in `docs/AI_AUDIT.md`.
 
 ## Session 1 — 26 Nov 2026
 
+**Member.** Harshit Pandey.
 **Tool.** Claude Code (model Claude Opus 5.5) in VS Code; Figma MCP server (official, `mcp.figma.com`); Playwright for screenshots.
 **Purpose.** Plan, design, build and test the GeoFound web app (phases 0–5 of our build prompt).
 
