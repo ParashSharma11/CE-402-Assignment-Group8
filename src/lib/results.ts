@@ -81,7 +81,7 @@ export function computeResults(s: ProjectState): ProjectResults {
   /* Columns → footings */
   const { columns, types } = buildColumns(s);
   const p = s.project;
-  const opt = { sAllow: p.limits.maxTotal, FS: p.FS, mode: p.mode, useDepthFactors: p.useDepthFactors, includeSelfWeight: p.includeSelfWeight, gammaFootingBackfill: p.gammaFB, tYears: p.tYears, Bmax: 6, LoverB: 1.5 };
+  const opt = { sAllow: p.limits.maxTotal, FS: p.FS, mode: p.mode, useDepthFactors: p.useDepthFactors, includeSelfWeight: p.includeSelfWeight, gammaFootingBackfill: p.gammaFB, tYears: p.tYears, Bmax: 6, LoverB: 1.5, strength: p.strength ?? 'zone-average', transition: p.transition ?? 'factors' };
   const memo = new Map<string, { found: boolean; check: FootingCheck | null }>();
   const colResults: ColumnResult[] = columns.map((c) => {
     const bh = bhById.get(c.boreholeId);
@@ -150,6 +150,8 @@ export function computeResults(s: ProjectState): ProjectResults {
     { item: 'Design water table', value: 'seasonal highest (August) per borehole', reason: 'Gives the lowest effective stress → conservative q, W′ and σ′v0', source: 'IS 6403:1981 (water-table effect) — TO VERIFY clause' },
     { item: 'Factor of safety', value: `${p.FS} on net ultimate`, reason: 'Assignment design criterion', source: 'IS 6403:1981' },
     { item: 'Shear failure mode', value: p.mode === 'auto' ? 'auto: local ≤ 29°, general ≥ 36°, interpolated' : p.mode, reason: 'Relative density of the founding sand', source: 'IS 6403:1981 cl. 5.1.2 — TO VERIFY' },
+    { item: 'Soil strength for IS 6403', value: (p.strength ?? 'zone-average') === 'zone-average' ? 'average over shear zone Df → Df + B' : 'layer at founding level', reason: 'Team method (v1 engine, Gaurav Dtyal): the shear zone extends about B below the base', source: 'IS 6403:1981 cl. 5.1.2 — TO VERIFY' },
+    { item: 'Local–general transition (29°–36°)', value: (p.transition ?? 'factors') === 'factors' ? 'interpolate Nc, Nq, Nγ' : 'interpolate qnu', reason: 'IS 6403 says interpolate; team v1 interpolates the factors. Both engines agree to 0.1 % with this choice', source: 'IS 6403:1981 cl. 5.1.2 — TO VERIFY' },
     { item: 'Depth factors', value: p.useDepthFactors ? 'used' : 'not used', reason: p.useDepthFactors ? 'Backfill to be compacted in layers' : 'Backfill compaction not assured', source: 'IS 6403:1981 — TO VERIFY clause' },
     { item: 'Footing + backfill weight', value: p.includeSelfWeight ? `γ = ${p.gammaFB} kN/m³ over Df` : 'ignored', reason: 'Net pressure = gross − overburden removed', source: 'IS 6403 definitions' },
     { item: 'Settlement limits', value: `${lim.maxTotal} mm; δ ≤ ${lim.maxDiffRatio ?? '–'}·L; β ≤ 1/${Math.round(1 / lim.maxAngular)}`, reason: 'RC framed building on isolated footings', source: lim.source },

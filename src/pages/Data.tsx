@@ -31,6 +31,8 @@ function ProjectStep() {
         <Field label="Founding depth Df" unit="m" value={p.Df} onChange={(v) => set({ Df: v ?? 1.5 })} />
         <Field label="Factor of safety on qnu" unit="–" value={p.FS} onChange={(v) => set({ FS: v ?? 3 })} />
         <Select<ShearMode> label="Shear failure mode" value={p.mode} onChange={(v) => set({ mode: v })} options={[{ value: 'auto', label: 'Auto (IS 6403 interpolation)' }, { value: 'general', label: 'General shear' }, { value: 'local', label: 'Local shear' }]} />
+        <Select label="Soil strength (IS 6403)" value={p.strength ?? 'zone-average'} onChange={(v) => set({ strength: v as 'zone-average' | 'base-layer' })} options={[{ value: 'zone-average', label: 'Shear-zone average (team v1)' }, { value: 'base-layer', label: 'Founding layer only' }]} />
+        <Select label="29°–36° transition" value={p.transition ?? 'factors'} onChange={(v) => set({ transition: v as 'factors' | 'capacity' })} options={[{ value: 'factors', label: 'Interpolate factors (team v1)' }, { value: 'capacity', label: 'Interpolate qnu' }]} />
         <Field label="Schmertmann time t" unit="yr" value={p.tYears} onChange={(v) => set({ tYears: v ?? 0.1 })} />
         <Field label="γ footing + backfill" unit="kN/m³" value={p.gammaFB} onChange={(v) => set({ gammaFB: v ?? 20 })} />
         <div className="flex flex-col gap-3 sm:col-span-2">

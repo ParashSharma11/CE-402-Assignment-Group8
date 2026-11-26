@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 import { Page, Shell } from '../components/layout';
 import { Arrow, Badge, Button, Card, Chip, Field, SectionHead, Select, SliderField, StepCard, Tabs, TabPanel } from '../components/ui';
 import { CountUp } from '../components/motion';
 import { PressureBulb, TimeChart } from '../components/viz';
 import { useProject } from '../store/project';
 import { useResults } from '../hooks/useResults';
+const CrossCheck = lazy(() => import('../components/CrossCheck'));
 import { checkFooting, consolidationSettlement, schmertmann, timeSettlement, type Drainage, type Footing, type Step } from '../engine';
 
 function StepGrid({ steps }: { steps: Step[] }) {
@@ -19,7 +20,7 @@ function QuickCalc() {
   const r = useMemo(() => {
     if (!bh) return null;
     const footing: Footing = { shape: q.shape, B: q.B, L: q.shape === 'rectangle' ? Math.max(q.L, q.B) : undefined, Df: q.Df };
-    try { return checkFooting(footing, { P: q.P, MB: q.MB }, bh, { sAllow: p.limits.maxTotal, FS: p.FS, mode: p.mode, useDepthFactors: p.useDepthFactors, includeSelfWeight: p.includeSelfWeight, gammaFootingBackfill: p.gammaFB, tYears: p.tYears }); }
+    try { return checkFooting(footing, { P: q.P, MB: q.MB }, bh, { sAllow: p.limits.maxTotal, FS: p.FS, mode: p.mode, useDepthFactors: p.useDepthFactors, includeSelfWeight: p.includeSelfWeight, gammaFootingBackfill: p.gammaFB, tYears: p.tYears, strength: p.strength ?? 'zone-average', transition: p.transition ?? 'factors' }); }
     catch (e) { return { error: (e as Error).message }; }
   }, [q, bh, p]);
   if (!bh) return null;
@@ -72,6 +73,7 @@ export default function Calculations() {
   const res = useResults();
   const bhs = useProject((s) => s.boreholes);
   const project = useProject((s) => s.project);
+  const labData = useProject((s) => s.lab);
   const withCheck = res.colResults.filter((c) => c.check);
   const governing = withCheck.reduce<(typeof withCheck)[number] | undefined>((m, c) => (!m || c.check!.sTotal > m.check!.sTotal ? c : m), undefined);
   const [colId, setColId] = useState<string>();
@@ -104,6 +106,7 @@ export default function Calculations() {
               <Select label="Column" value={col?.col.id ?? ''} onChange={setColId} options={withCheck.map((c) => ({ value: c.col.id, label: `${c.col.id} · ${c.col.boreholeId} · ${c.col.load.P.toFixed(0)} kN${c === governing ? ' (governing s)' : ''}` }))} className="w-80" />
               {col?.check && <Badge status={col.found ? 'pass' : 'fail'}>{col.found ? `B = ${col.check.footing.B.toFixed(2)} m works` : 'no isolated footing ≤ 6 m'}</Badge>}
             </div>
+            {col?.check && bh && <div className="mb-8"><Suspense fallback={null}><CrossCheck check={col.check} bh={bh} project={project} lab={labData} /></Suspense></div>}
             <Tabs value={tab} onChange={setTab} tabs={[{ value: 'p2', label: 'P2 Lab' }, { value: 'p3', label: 'P3 Bearing' }, { value: 'p5', label: 'P5 Settlement' }]}>
               <TabPanel value="p2" className="mt-6 grid gap-8">
                 {res.lab.shear.map((s) => <div key={s.name}><h3 className="mb-3 font-display text-[20px] font-bold">Direct shear · {s.name}</h3><StepGrid steps={s.steps} /></div>)}

@@ -13,6 +13,10 @@ export interface ProjectInfo {
   includeSelfWeight: boolean;
   gammaFB: number;
   tYears: number;
+  /** Strength for IS 6403: team v1 method = shear-zone average (default) or founding layer. */
+  strength?: 'zone-average' | 'base-layer';
+  /** 29°–36° transition: team v1 method = interpolate factors (default) or interpolate capacity. */
+  transition?: 'factors' | 'capacity';
   limits: SettlementLimits;
 }
 
@@ -69,7 +73,7 @@ const blankBorehole = (id: string): Borehole => ({
 const blankState = () => ({
   project: {
     name: 'New site', location: '', group: 0, FS: 3, Df: 1.5, mode: 'auto' as ShearMode, useDepthFactors: true,
-    includeSelfWeight: true, gammaFB: 20, tYears: 0.1,
+    includeSelfWeight: true, gammaFB: 20, tYears: 0.1, strength: 'zone-average' as const, transition: 'factors' as const,
     limits: { maxTotal: 50, maxDiffRatio: 0.0015, maxAngular: 1 / 666, source: 'IS 1904:1986 Table 1 — cite the row you adopt' },
   },
   building: { nLines: 4, nRows: 3, sx: 5, sy: 5, loads: { corner: 500, edge: 800, interior: 1200 }, overrides: {}, zoning: [{ from: 1, to: 4, bh: 'BH-1' }] },
