@@ -75,6 +75,43 @@ the foundations are alternately wetted and dried, which is "severe" exposure und
 ≥ 50 mm, cl. 26.4.2.2). fck is now an input (default 30) and Ec = 5000√fck (cl. 6.2.3.1) = 27.4 GPa. Effect: worst pile
 settlement 13.6 → 13.3 mm; every check still passes.
 
+### 8. No liquefaction check in seismic zone V
+**AI output.** The design ignored liquefaction although the site is in zone V with saturated loose silty sand (BH-3 SM,
+N = 6, 24 % fines, WT 0.6 m) 25 m from a stream.
+**Detection.** Independent review of the app against the problem statement (team, 26 Nov 2026).
+**Correction.** New module `src/engine/liquefaction.ts` (IS 1893 Annex F / Youd et al. 2001), shown on the Ground page.
+BH-3 SM and SP liquefy at 0.18 g (FS 0.82, 0.98); BH-1/BH-2 sands pass at 0.18 g but not at 0.36 g. Pile shaft
+friction in liquefiable layers is now ignored and added as downdrag (132 kN per pile in BH-3); a zone with a liquefiable
+layer cannot use isolated footings. amax = Z/2 is ASSUMED (TO VERIFY against Annex F).
+
+### 9. Water table at the time of the test ignored (SPT corrections and OCR)
+**AI output.** IS 2131 corrections and σ′v0 for the clay used the August design WT.
+**Detection.** Review. Corrections normalise N to the stress at the time of the test; σ′p comes from samples taken then.
+**Correction.** SPT corrections and (N1)60 use the October measured WT (BH-1 1.5 m: N″ 17.0 → 18.9, no dilatancy);
+σ′v0 in the consolidation analysis uses it too (UDS-1: 79.5 → 92.0 kPa, OCR 1.44 → 1.25, larger settlement).
+
+### 10. Lab cohesion intercept used for non-plastic sand
+**AI output.** c′ = 1.03 kPa (SM) and 0.37 kPa (SP) from the least-squares fit went into IS 6403 (≈ 6 % of qnu).
+**Correction.** Design c′ = 0 for the sands; the intercepts are still reported in the parameter module.
+
+### 11. Footings analysed one at a time — overlapping pressure bulbs ignored
+**AI output.** Each footing's clay settlement used only its own Δσ; on a 5 m grid the bulbs overlap at the clay depth.
+**Detection.** Review ("check whether the app is computing single-footing settlement in isolation").
+**Correction.** Δσ from every footing within 15 m is superposed (Boussinesq) in the consolidation analysis. In BH-1 the
+added stress (~55 kPa vs ~16 kPa from one footing) takes the lightly overconsolidated clay past σ′p: isolated footings
+settle up to 115 mm (limit 50 mm). **This changes the recommendation: bored piles under every column** (one foundation
+type, no movement joint). Without overlap the old design (footings on lines 1–5) is still reproduced by a test.
+
+### 12. Eccentric column moment ignored in the pile group; C4 orientation
+**AI output.** Pile groups were sized for P only; C4's footing had the eccentricity across the short side B.
+**Correction.** Rigid-cap distribution P/n ± M·x/Σx² → C4 needs 4 piles (2 would carry 1044 kN > 875 kN). C4's long side
+is now oriented along the moment (e along L), which loses 2e·B instead of 2e·L of area.
+
+_Reviewer remark accepted without change:_ cv = 1.99 m²/yr from the 1–2 kg/cm² increment is the right choice — with
+σ′v0 ≈ 80–92 kPa plus Δσ, the clay works in the 98–196 kPa range (our earlier note calling it conservative was wrong).
+_Reviewer number not adopted:_ qnu ≈ 342 kPa for A3 uses φ of the founding layer only (29.98°); the app uses the
+shear-zone average φ = 31.2° (team v1 method, item 6) and states the φ criterion explicitly. Both are shown in the app.
+
 ---
 
 **General weakness (all items above).** The AI wrote IS clause numbers it could not check against the code text. Every

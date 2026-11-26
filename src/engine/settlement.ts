@@ -119,6 +119,8 @@ export interface ConsolidationInput {
   maxSub?: number;
   /** Only consider clay down to this depth below ground, m (default: bottom of profile). */
   zMax?: number;
+  /** Extra Δσ from neighbouring footings at depth zb below this footing's base, kPa (superposition). */
+  extra?: (zb: number) => number;
 }
 
 export interface ConsolidationRow {
@@ -167,7 +169,7 @@ export function consolidationSettlement(inp: ConsolidationInput): ConsolidationR
       const zTop = top + i * H, zBot = zTop + H, zMid = (zTop + zBot) / 2;
       const s0 = effectiveStress(layers, zMid, zw);
       const zb = zMid - footing.Df;
-      const dsig = inp.at === 'corner' ? deltaSigmaAt(q, B, L, 0, 0, zb) : deltaSigmaCentre(q, B, L, zb);
+      const dsig = (inp.at === 'corner' ? deltaSigmaAt(q, B, L, 0, 0, zb) : deltaSigmaCentre(q, B, L, zb)) + (inp.extra?.(zb) ?? 0);
       const sp = Math.max(l.sigmaP ?? s0, s0);
       const Cr = l.Cr ?? l.Cc / 5;
       if (l.Cr === undefined) notes.push(`Layer ${l.symbol}: Cr not given — assumed Cc/5 (TO VERIFY; typical range Cc/5–Cc/10, Das 2014 §11.6).`);

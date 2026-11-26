@@ -71,6 +71,9 @@ function ProjectStep() {
         <Field label="Pile diameter (alternative)" unit="m" value={p.pileD ?? 0.5} onChange={(v) => set({ pileD: v ?? 0.5 })} />
         <Field label="Pile socket into bearing stratum" unit="m" value={p.pileSocket ?? 1.5} onChange={(v) => set({ pileSocket: v ?? 1.5 })} />
         <Field label="Concrete grade fck (IS 456 Table 5: severe → M30)" unit="MPa" value={p.fck ?? 30} onChange={(v) => set({ fck: v ?? 30 })} />
+        <Field label="Seismic zone factor Z (IS 1893 Table 3; zone V = 0.36)" unit="–" value={p.Z ?? 0.36} onChange={(v) => set({ Z: v ?? 0.36 })} />
+        <Field label="Design PGA amax for liquefaction (default Z/2)" unit="g" value={p.amax ?? 0.18} onChange={(v) => set({ amax: v ?? 0.18 })} />
+        <Field label="Earthquake magnitude Mw" unit="–" value={p.Mw ?? 7.5} onChange={(v) => set({ Mw: v ?? 7.5 })} />
         <Select label="Where isolated footings fail" value={p.alternative ?? 'piles-zone'} onChange={(v) => set({ alternative: v as 'piles-zone' | 'piles-all' })} options={[{ value: 'piles-zone', label: 'Piles in that zone + movement joint' }, { value: 'piles-all', label: 'Piles under the whole building' }]} className="sm:col-span-2" />
         <Field label="Schmertmann time t" unit="yr" value={p.tYears} onChange={(v) => set({ tYears: v ?? 0.1 })} />
         <Field label="γ footing + backfill" unit="kN/m³" value={p.gammaFB} onChange={(v) => set({ gammaFB: v ?? 20 })} />

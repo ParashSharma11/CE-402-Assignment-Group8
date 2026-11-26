@@ -35,7 +35,7 @@ export default function Design() {
     <Page>
       <Shell>
         <SectionHead k="05 · foundation design" title={allOk ? 'A foundation that works.' : 'Footings, sized and checked.'}
-          sub={`Isolated footings are proportioned for equal settlement wherever they can work; where they cannot (bearing or ${p.limits.maxTotal} mm settlement within the grid), the zone gets bored piles to the bearing stratum. Every check below is on this final design.`}
+          sub={`Isolated footings are tried first, proportioned for equal settlement with the stress from neighbouring footings included in the clay. Where they fail bearing, liquefaction or the IS 1904 settlement limits, bored piles go to the dense gravel. Every check below is on this final design.`}
           right={<Button to="/summary" label="Summary" icon={<Arrow />} />} />
 
         <div className="mb-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -80,7 +80,7 @@ export default function Design() {
                     </>) : cur.pile ? (
                       <dl className="grid grid-cols-2 gap-3 text-[13px]">
                         {[['Borehole', cur.col.boreholeId], ['Load P (×λ)', `${cur.col.load.P.toFixed(0)} kN`], ['Piles', `${cur.pile.nPiles} × Ø${(p.pileD ?? 0.5).toFixed(2)} m`], ['Length', `${cur.pile.length.toFixed(2)} m (toe ${cur.pile.toe.toFixed(2)} m)`],
-                          ['Bearing stratum', cur.pile.bearingLayer], ['Q_safe per pile', `${cur.pile.Qsafe.toFixed(0)} kN`], ['Group capacity', `${(cur.pile.nPiles * cur.pile.Qsafe).toFixed(0)} kN`], ['Cap', `${cur.pile.capB.toFixed(2)} × ${cur.pile.capB.toFixed(2)} m`], ['Settlement', `${(cur.s * 1000).toFixed(1)} mm`]].map(([k, v]) => (
+                          ['Bearing stratum', cur.pile.bearingLayer], ['Q_safe per pile', `${cur.pile.Qsafe.toFixed(0)} kN`], ['Max pile load', `${(cur.pile.PmaxPile ?? 0).toFixed(0)} kN`], ['Downdrag (liquefaction)', `${cur.pile.Qneg.toFixed(0)} kN / pile`], ['Cap', `${cur.pile.capB.toFixed(2)} × ${cur.pile.capB.toFixed(2)} m`], ['Settlement', `${(cur.s * 1000).toFixed(1)} mm`]].map(([k, v]) => (
                           <div key={k} className="rounded-xl border border-line-soft px-3 py-2"><dt className="hud">{k}</dt><dd className="num mt-0.5 text-ink">{v}</dd></div>))}
                       </dl>
                     ) : null}
@@ -118,7 +118,7 @@ export default function Design() {
 
           <TabPanel value="piles" className="mt-6">
             {pileCol?.pile ? (<>
-              <p className="mb-4 max-w-3xl text-[15px] text-warm">Bored cast-in-situ piles for {pileCol.col.id} ({pileCol.col.boreholeId}): end bearing in the {pileCol.pile.bearingLayer} stratum plus shaft friction, FS 2.5, at least two piles per column.</p>
+              <p className="mb-4 max-w-3xl text-[15px] text-warm">Bored cast-in-situ piles for {pileCol.col.id} ({pileCol.col.boreholeId}): end bearing in the {pileCol.pile.bearingLayer} stratum plus shaft friction, FS 2.5, at least two piles per column. Shaft friction in liquefiable layers is ignored and added to the pile load as downdrag; a column moment is shared by the rigid cap (P/n ± M·x/Σx²). Click a column on the plan to see its piles.</p>
               <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">{pileCol.pile.steps.map((st, i) => <StepCard key={st.title + i} step={st} index={i} />)}</div>
             </>) : <Card className="p-6"><p className="text-warm">No piles are needed — isolated footings work everywhere.</p></Card>}
           </TabPanel>

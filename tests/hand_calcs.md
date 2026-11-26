@@ -64,5 +64,26 @@ UDS-1: cu = (57.2 + 55.8 + 58.1)/3 / 2 = **28.517 kPa**. UDS-2: (71.0 + 73.4 + 7
   σ′v0 = 12.5 → C1 = 1 − 0.5 × 12.5/100 = 0.9375; C2 = 1. σ′vp at Df + B/2 = 2 m = 25 → Izp = 0.5 + 0.1√4 = 0.70.
   ∫Iz dz = ½(0.1 + 0.7)(1.0) + ½(0.7)(3.0) = 1.45 m → s = 0.9375 × 100 × 1.45 / 10 000 = **13.59 mm**.
 
+## L. Liquefaction — BH-3, SM at 1.5 m (tests/liquefaction.test.ts)
+Youd et al. (2001) simplified procedure as in IS 1893 (Part 1):2016 Annex F; amax = 0.18 g (Z/2), Mw 7.5.
+- Test time (October WT 1.9 m): σ′v = 0.9 × 16.0 + 0.6 × 17.5 = 24.9 kPa → CN = min(1.7, √(100/24.9)) = 1.7.
+- (N1)60 = 6 × 1.7 × CE 1.0 × CB 1.05 × CR 0.75 = 8.0325. FC = 24 %: α = e^(1.76 − 190/24²) = 4.1793,
+  β = 0.99 + 24^1.5/1000 = 1.10758 → (N1)60cs = 4.1793 + 1.10758 × 8.0325 = 13.075.
+- CRR7.5 = 1/(34 − 13.075) + 13.075/135 + 50/(130.75 + 45)² − 1/200 = **0.1413**.
+- Design WT 0.6 m: σv = 0.6 × 16.0 + 0.3 × 18.0 + 0.6 × 19.5 = 26.7 kPa, u = 0.9 × 9.81 = 8.83 → σ′v = 17.87 kPa;
+  rd = 1 − 0.00765 × 1.5 = 0.9885; CSR = 0.65 × 0.18 × (26.7/17.87) × 0.9885 = **0.1728**.
+- FS = 0.1413 / 0.1728 = **0.82 < 1 → liquefiable**. (BH-3 SP at 3.0 m: FS = 0.98; BH-1 SM 1.5 m: 1.75, at 0.36 g: 0.88.)
+
+## M. Water table at the time of the test (reviewer findings)
+- SPT BH-1 1.5 m, October WT 2.6 m: σ′v = 0.6 × 16.5 + 0.9 × 18.0 = 26.1 kPa → CN = 0.77 log(2000/26.1) = 1.451,
+  N′ = 18.86; above the WT at test time → no dilatancy → **N″ = 18.9** (was 17.0 with the August WT).
+- σ′v0 at UDS-1 (7.225 m), October WT: σv = 9.9 + 36.0 + 16.0 + 48.96 + 26.51 = 137.37, u = 4.625 × 9.81 = 45.37
+  → **92.0 kPa**, OCR = 114.6/92.0 = **1.25** (August WT: 79.5 kPa, OCR 1.44 — unconservative for settlement).
+
+## N. Eccentric C4 on piles (tests/final.test.ts)
+P = 1450 × 1.08 = 1566 kN, M = 362.5 × 1.08 = 391.5 kN·m, Q_safe (BH-1) = 875 kN, spacing 3D = 1.5 m.
+- 2 piles in a line: P/2 + M·0.75/(2 × 0.75²) = 783 + 261 = 1044 kN > 875 → not enough.
+- 2 × 2 group: P/4 + M·0.75/(4 × 0.75²) = 391.5 + 130.5 = **522 kN ≤ 875** → 4 piles.
+
 ## 9. Group 8 hand calculations
 _To be added by the team (e.g. one footing per borehole zone with λ = 1.08)._

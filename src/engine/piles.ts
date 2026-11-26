@@ -37,11 +37,18 @@ export interface PileOptions {
   fck?: number;
   /** Concrete modulus, kPa — overrides fck if given. */
   Ec?: number;
+  /** Depth (m bgl) down to which the soil may liquefy (from the liquefaction check). Shaft friction above this depth
+   *  is ignored, and the same friction is added to the pile load as downdrag from post-liquefaction reconsolidation. */
+  liquefiableTo?: number;
 }
 
 export interface PileDesign {
   toe: number; length: number; bearingLayer: string;
   Qb: number; Qs: number; Qu: number; Qsafe: number; // kN
+  /** Downdrag per pile from liquefiable layers, kN (0 if none). */
+  Qneg: number;
+  /** Load on the most heavily loaded pile incl. moment and downdrag, kN (group designs only). */
+  PmaxPile?: number;
   nPiles: number; capB: number; // m (square cap side)
   sElastic: number; sRaft: number; sTotal: number; // m
   steps: Step[];
@@ -64,7 +71,11 @@ export function singlePile(bh: Borehole, o: PileOptions) {
   const bs = bearingStratum(bh);
   const toe = bs.top + o.socket;
   const zw = bh.designWT;
-  const zCrit = o.cutoff + 20 * D; // P_D limited at 20 D below cut-off
+  // Critical depth measured from existing ground level (overburden depth), not from the cut-off.
+  // SOURCE: IS 2911 (Part 1/Sec 2):2010 Annex B note on P_D (15D–20D) — TO VERIFY wording.
+  const zCrit = 20 * D;
+  const zLiq = o.liquefiableTo ?? 0;
+  let Qneg = 0;
   const PD = (z: number) => effectiveStress(bh.layers, Math.min(z, zCrit), zw);
   const steps: Step[] = [];
   // shaft
@@ -76,6 +87,11 @@ export function singlePile(bh: Borehole, o: PileOptions) {
     let q: number;
     if (l.behaviour === 'cohesive') q = alpha * (l.cu ?? 0) * As;
     else { const delta = deg2rad(l.phi ?? 30); q = K * PD((t + b) / 2) * Math.tan(delta) * As; }
+    if (b <= zLiq + 1e-9) {
+      Qneg += q;
+      steps.push(step({ title: `Shaft friction ${l.symbol} ${n(t, 2)}–${n(b, 2)} m — liquefiable zone`, equation: 'Qs = 0; downdrag Qneg = static friction', substituted: `static value ${n(q, 1)} kN taken as downdrag`, value: 0, unit: 'kN', source: 'IS 1893 (Part 1):2016 Annex F liquefaction; IS 2911 (Part 1/Sec 2) negative skin friction — TO VERIFY' }));
+      continue;
+    }
     Qs += q;
     steps.push(step({ title: `Shaft friction ${l.symbol} ${n(t, 2)}–${n(b, 2)} m`, equation: l.behaviour === 'cohesive' ? 'Qs = α·cu·As' : 'Qs = K·P_D·tanδ·As (δ = φ)', substituted: l.behaviour === 'cohesive' ? `${n(alpha)} × ${n(l.cu ?? 0, 2)} × ${n(As, 3)}` : `${n(K)} × ${n(PD((t + b) / 2), 2)} × tan ${n(l.phi ?? 30, 1)}° × ${n(As, 3)}`, value: q, unit: 'kN', source: SRC }));
   }
@@ -92,32 +108,50 @@ export function singlePile(bh: Borehole, o: PileOptions) {
     step({ title: 'Ultimate capacity Qu', equation: 'Qu = Qb + ΣQs', substituted: `${n(Qb, 1)} + ${n(Qs, 1)}`, value: Qu, unit: 'kN', source: SRC }),
     step({ title: 'Safe capacity per pile', equation: 'Q_safe = Qu / 2.5', substituted: `${n(Qu, 1)} / ${n(FS, 2)}`, value: Qsafe, unit: 'kN', source: SRC }),
   );
-  return { toe, length: toe - o.cutoff, bearingLayer: bs.symbol, Qb, Qs, Qu, Qsafe, steps };
+  return { toe, length: toe - o.cutoff, bearingLayer: bs.symbol, Qb, Qs, Qu, Qsafe, Qneg, steps };
 }
 
 /** Pile group under one column: number of piles, cap size and settlement. */
-export function designPileGroup(P: number, bh: Borehole, o: PileOptions): PileDesign {
+/**
+ * Pile group under one column. M = column moment, kN·m (eccentric column); pile loads by the rigid-cap formula
+ * P_i = P/n ± M·x_i/Σx². SOURCE: rigid pile-cap load distribution, Tomlinson & Woodward §6 / Das (2016) §11 — TO VERIFY.
+ * 2 piles are placed in a line along the moment; 3 or more piles use a full square grid (n rounded up to k²).
+ */
+export function designPileGroup(P: number, bh: Borehole, o: PileOptions, M = 0): PileDesign {
   const s1 = singlePile(bh, o);
-  const nPiles = Math.max(2, Math.ceil(P / s1.Qsafe));
-  const nSide = Math.ceil(Math.sqrt(nPiles));
   const spacing = 3 * o.D; // IS 2911: minimum 2.5–3 D — TO VERIFY
+  const cap = s1.Qsafe - s1.Qneg; // net safe capacity per pile after downdrag
+  // Maximum pile load for n piles: line of 2 → x = ±s/2; k×k grid → x = ±(k−1)s/2 …
+  const pMax = (n: number): number => {
+    if (M <= 0) return P / n;
+    const k = n === 2 ? 2 : Math.ceil(Math.sqrt(n));
+    const xs = Array.from({ length: k }, (_, i) => (i - (k - 1) / 2) * spacing);
+    const rows = n === 2 ? 1 : k;
+    const sumX2 = rows * xs.reduce((a, x) => a + x * x, 0);
+    return P / n + (M * Math.max(...xs)) / sumX2;
+  };
+  // P_max + Qneg ≤ Q_safe for the most heavily loaded pile
+  let nPiles = Math.max(2, Math.ceil(P / cap));
+  if (M > 0) { if (nPiles > 2) nPiles = Math.ceil(Math.sqrt(nPiles)) ** 2; while (pMax(nPiles) > cap + 1e-9) nPiles = nPiles === 2 ? 4 : (Math.ceil(Math.sqrt(nPiles)) + 1) ** 2; }
+  const nSide = Math.ceil(Math.sqrt(nPiles));
   const groupB = (nSide - 1) * spacing + o.D;
   const capB = groupB + 2 * 0.15; // 150 mm edge cover beyond piles
   const fck = o.fck ?? 30;
   // SOURCE: IS 456:2000 cl. 6.2.3.1 — short-term static modulus Ec = 5000√fck (MPa); × 1000 → kPa
   const Ec = o.Ec ?? 5000 * Math.sqrt(fck) * 1000;
   const Ap = (Math.PI * o.D * o.D) / 4;
-  const Ppile = P / nPiles;
+  const Ppile = P / nPiles + s1.Qneg;
+  const PmaxPile = pMax(nPiles) + s1.Qneg;
   const sElastic = (Ppile * s1.length) / (Ap * Ec);
   const sSingle = o.D / 100 + sElastic;
   const groupFactor = Math.sqrt(groupB / o.D);
   const sRaft = sSingle * groupFactor - sElastic; // base/group part, reported separately
   const sTotal = sElastic + sRaft;
   const steps = [...s1.steps,
-    step({ title: 'Number of piles', equation: 'n = max(2, ⌈P / Q_safe⌉)', substituted: `max(2, ⌈${n(P, 1)} / ${n(s1.Qsafe, 1)}⌉)`, value: nPiles, unit: 'piles', source: `${SRC}; minimum 2 per column ASSUMED` }),
+    step({ title: 'Number of piles', equation: M > 0 ? 'P/n + M·x_max/Σx² + Qneg ≤ Q_safe' : 'n = max(2, ⌈P / (Q_safe − Qneg)⌉)', substituted: M > 0 ? `P = ${n(P, 1)} kN, M = ${n(M, 1)} kN·m, n = ${nPiles}: P_max = ${n(PmaxPile, 1)} ≤ ${n(s1.Qsafe, 1)}` : `max(2, ⌈${n(P, 1)} / (${n(s1.Qsafe, 1)} − ${n(s1.Qneg, 1)})⌉)`, value: nPiles, unit: 'piles', source: `${SRC}; minimum 2 per column ASSUMED` }),
     step({ title: 'Pile cap (square)', equation: 'cap = (√n − 1)·3D + D + 2 × 0.15', substituted: `${nSide} × ${nSide} grid at ${n(spacing, 2)} m`, value: capB, unit: 'm', source: 'IS 2911 spacing ≥ 3D — TO VERIFY' }),
     step({ title: 'Single-pile settlement', equation: 's1 = D/100 + P_pile·L/(Ap·Ec)', substituted: `${n(o.D, 2)}/100 + ${n(Ppile, 1)} × ${n(s1.length, 2)} / (${n(Ap, 4)} × ${n(Ec, 0)})`, value: sSingle * 1000, unit: 'mm', source: `Tomlinson D/100 rule; Ec = 5000√fck (IS 456:2000 cl. 6.2.3.1), M${fck}` }),
     step({ title: 'Group settlement', equation: 's_g = s1·√(Bg / D)', substituted: `${n(sSingle * 1000, 2)} × √(${n(groupB, 2)} / ${n(o.D, 2)})`, value: (sSingle * groupFactor) * 1000, unit: 'mm', source: 'Vesic (1969) group factor — TO VERIFY' }),
   ];
-  return { ...s1, nPiles, capB, sElastic, sRaft, sTotal, steps, ok: true };
+  return { ...s1, nPiles, capB, sElastic, sRaft, sTotal, PmaxPile, steps, ok: true };
 }

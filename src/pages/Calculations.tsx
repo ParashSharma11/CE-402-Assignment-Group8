@@ -6,7 +6,7 @@ import { PressureBulb, TimeChart } from '../components/viz';
 import { useProject } from '../store/project';
 import { useResults } from '../hooks/useResults';
 const CrossCheck = lazy(() => import('../components/CrossCheck'));
-import { checkFooting, consolidationSettlement, schmertmann, timeSettlement, type Drainage, type Footing, type Step } from '../engine';
+import { checkFooting, clayWT, consolidationSettlement, schmertmann, timeSettlement, type Drainage, type Footing, type Step } from '../engine';
 
 function StepGrid({ steps }: { steps: Step[] }) {
   return <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">{steps.map((s, i) => <StepCard key={s.title + i} step={s} index={i} />)}</div>;
@@ -86,7 +86,7 @@ export default function Calculations() {
     if (!col?.check || !bh) return null;
     const f = col.check.footing;
     const sch = schmertmann({ footing: f, layers: bh.layers, zw: bh.designWT, netPressure: col.check.qApplied, tYears: project.tYears });
-    const con = consolidationSettlement({ footing: f, layers: bh.layers, zw: bh.designWT, netPressure: col.check.qApplied });
+    const con = consolidationSettlement({ footing: f, layers: bh.layers, zw: clayWT(bh), netPressure: col.check.qApplied });
     const clay = bh.layers.find((l) => l.behaviour === 'cohesive' && l.cv);
     const H = clay ? clay.bottom - Math.max(clay.top, f.Df) : 0;
     const ts = clay && H > 0 && con.settlement > 0 ? timeSettlement(con.settlement * 1000, clay.cv!, H, drain, 30) : null;

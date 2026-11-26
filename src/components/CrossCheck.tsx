@@ -18,7 +18,7 @@ export default function CrossCheck({ check, bh, project, lab }: { check: Footing
       if (v1 && Number.isFinite(v1.qnu)) out.push({ module: 'P3', who: TEAM_CREDITS.P3, what: `qnu, ${f.shape} B = ${f.B.toFixed(2)} m`, v1: v1.qnu, v2: v2.qnu, unit: 'kPa', dp: 1 });
     } catch { /* v1 may reject unusual inputs */ }
     try {
-      const s1 = teamSpt(bh, bh.designWT), s2 = correctSpt(bh.spt, bh.layers, bh.designWT).filter((r) => !r.refusal);
+      const s1 = teamSpt(bh, bh.measuredWT), s2 = correctSpt(bh.spt, bh.layers, bh.measuredWT).filter((r) => !r.refusal);
       if (s1[0] && s2[0]) out.push({ module: 'P2', who: TEAM_CREDITS.P2, what: `SPT N″ at ${s1[0].depth.toFixed(1)} m`, v1: s1[0].N2, v2: s2[0].Ncorr, unit: '', dp: 2 });
     } catch { /* skip */ }
     const ds = lab.directShear[0];

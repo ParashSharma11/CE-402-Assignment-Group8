@@ -10,6 +10,7 @@ export default function Ground() {
   const bhs = useProject((s) => s.boreholes);
   const Df = useProject((s) => s.project.Df);
   const res = useResults();
+  const seis = useProject((s) => s.project);
   const [sel, setSel] = useState(bhs[0]?.id ?? '');
   const bh = bhs.find((b) => b.id === sel) ?? bhs[0];
   const [wt, setWt] = useState<'design' | 'measured'>('design');
@@ -61,7 +62,7 @@ export default function Ground() {
         </div>
 
         <Card interactive={false} className="mt-4 overflow-x-auto p-6">
-          <div className="hud mb-4">SPT corrections · IS 2131 · {bh.id} · design WT</div>
+          <div className="hud mb-4">SPT corrections · IS 2131 · {bh.id} · WT at test time ({bh.measuredWT} m, Oct)</div>
           <table className="w-full min-w-[640px] text-left text-[14px]">
             <thead><tr className="border-b border-line-soft">{['Depth m', 'N', "σ′v kPa", 'CN', "N′ = CN·N", "N″ (dilatancy)", ''].map((h) => <th key={h} className="py-2 font-mono text-[10px] uppercase tracking-[0.12em] text-muted">{h}</th>)}</tr></thead>
             <tbody>{(res.perBH[bh.id]?.spt ?? []).map((s) => (
@@ -70,6 +71,28 @@ export default function Ground() {
                 <td className="num">{s.refusal ? '—' : s.N1.toFixed(1)}</td><td className="num">{s.refusal ? '—' : s.Ncorr.toFixed(1)}</td>
                 <td>{s.refusal ? <Badge status="info">refusal</Badge> : s.dilatancyApplied ? <Badge status="warn">dilatancy</Badge> : null}</td>
               </tr>))}</tbody>
+          </table>
+        </Card>
+
+        <Card interactive={false} className="mt-4 overflow-x-auto p-6">
+          <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+            <span className="hud">liquefaction · IS 1893 (Part 1):2016 Annex F (simplified, Youd et al. 2001) · {bh.id}</span>
+            <span className="font-mono text-[11px] text-muted">amax = {seis.amax ?? 0.18} g · Mw {seis.Mw ?? 7.5} · CSR at design WT {bh.designWT} m · (N1)60 at test WT {bh.measuredWT} m</span>
+          </div>
+          <p className="mb-4 max-w-3xl text-[13px] text-warm">Seismic zone V, Z = {seis.Z ?? 0.36}. FS &lt; 1.0 liquefies, 1.0–1.2 marginal. Last column: FS if amax = Z = {seis.Z ?? 0.36} g (upper bound). Clay with PI ≥ 12 is not susceptible (Bray &amp; Sancio 2006).</p>
+          <table className="w-full min-w-[820px] text-left text-[14px]">
+            <thead><tr className="border-b border-line-soft">{['Depth m', 'Soil', 'N', '(N1)60', 'FC %', '(N1)60cs', 'CRR', 'rd', 'CSR', 'FS', '', `FS @ ${seis.Z ?? 0.36} g`].map((h) => <th key={h} className="py-2 font-mono text-[10px] uppercase tracking-[0.12em] text-muted">{h}</th>)}</tr></thead>
+            <tbody>{(res.perBH[bh.id]?.liq?.rows ?? []).map((r, i) => {
+              const m = res.perBH[bh.id]?.liqMCE?.rows[i];
+              const f = (x?: number, d = 2) => (x === undefined || !Number.isFinite(x) ? '—' : x.toFixed(d));
+              return (
+                <tr key={r.depth} className="border-b border-line-soft/50">
+                  <td className="num py-2">{r.depth.toFixed(2)}</td><td>{r.symbol}</td><td className="num">{r.N >= 100 ? '>100' : r.N}</td>
+                  <td className="num">{f(r.N160, 1)}</td><td className="num">{r.FC ?? '—'}</td><td className="num">{f(r.N160cs, 1)}</td><td className="num">{f(r.CRR, 3)}</td><td className="num">{f(r.rd, 3)}</td><td className="num">{f(r.CSR, 3)}</td><td className="num">{f(r.FS)}</td>
+                  <td><Badge status={r.status === 'liquefiable' ? 'fail' : r.status === 'marginal' ? 'warn' : r.FS !== undefined ? 'pass' : 'info'}>{r.status === 'liquefiable' || r.status === 'marginal' || r.status === 'safe' ? r.status : r.reason}</Badge></td>
+                  <td className="num">{f(m?.FS)}</td>
+                </tr>);
+            })}</tbody>
           </table>
         </Card>
       </Shell>

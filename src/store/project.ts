@@ -24,11 +24,15 @@ export interface ProjectInfo {
   fck?: number;
   /** Where isolated footings fail: piles in that zone + movement joint, or piles under the whole building. */
   alternative?: 'piles-zone' | 'piles-all';
+  /** Seismic zone factor Z (IS 1893 Table 3), design PGA amax (fraction of g) and magnitude Mw for liquefaction. */
+  Z?: number;
+  amax?: number;
+  Mw?: number;
   limits: SettlementLimits;
 }
 
 export interface Zone { from: number; to: number; bh: string }
-export interface ColumnOverride { P?: number; MB?: number; shape?: Footing['shape'] }
+export interface ColumnOverride { P?: number; MB?: number; ML?: number; shape?: Footing['shape'] }
 
 export interface Building {
   nLines: number; // grid lines along length (1..n), west → east
@@ -82,7 +86,7 @@ const blankBorehole = (id: string): Borehole => ({
 const blankState = () => ({
   project: {
     name: 'New site', location: '', group: 0, FS: 3, Df: 1.5, mode: 'auto' as ShearMode, useDepthFactors: true,
-    includeSelfWeight: true, gammaFB: 20, tYears: 0.1, strength: 'zone-average' as const, transition: 'factors' as const, pileD: 0.5, pileSocket: 1.5, fck: 30, alternative: 'piles-zone' as const,
+    includeSelfWeight: true, gammaFB: 20, tYears: 0.1, strength: 'zone-average' as const, transition: 'factors' as const, pileD: 0.5, pileSocket: 1.5, fck: 30, Z: 0.36, amax: 0.18, Mw: 7.5, alternative: 'piles-zone' as const,
     limits: { maxTotal: 50, maxDiffRatio: 0.0015, maxAngular: 1 / 666, source: 'IS 1904:1986 Table 1 — cite the row you adopt' },
   },
   building: { nLines: 4, nRows: 3, sx: 5, sy: 5, loads: { corner: 500, edge: 800, interior: 1200 }, overrides: {}, zoning: [{ from: 1, to: 4, bh: 'BH-1' }] },
@@ -154,11 +158,11 @@ export const useProject = create<ProjectState>()(
         set({
           project: {
             ...get().project, name: 'Students’ hostel, G+3 RC frame', location: 'Mandi, Himachal Pradesh · seismic zone V',
-            group: m.GROUP_NUMBER, Df: m.DF, limits: m.limitsCandidate.sand,
+            group: m.GROUP_NUMBER, Df: m.DF, limits: m.limitsCandidate.sand, Z: m.SEISMIC.Z, amax: m.SEISMIC.amax, Mw: m.SEISMIC.Mw,
           },
           building: {
             nLines: 7, nRows: 4, sx: 5, sy: 5, loads: { corner: 650, edge: 1000, interior: 1450 },
-            overrides: { C4: { P: 1450, MB: 362.5, shape: 'rectangle' } },
+            overrides: { C4: { P: 1450, ML: 362.5, shape: 'rectangle' } },
             zoning: [{ from: 1, to: 2, bh: 'BH-2' }, { from: 3, to: 5, bh: 'BH-1' }, { from: 6, to: 7, bh: 'BH-3' }],
           },
           boreholes: structuredClone(m.boreholes),
@@ -179,6 +183,10 @@ export const useProject = create<ProjectState>()(
     }),
     {
       name: 'geofound-project-v1',
+      // v2 (26 Nov 2026): design c′ = 0 for sands, fines/PI for liquefaction, C4 moment along L. Older saved projects
+      // are cleared so the corrected example is used; reopen the example from the home or Data page.
+      version: 2,
+      migrate: () => ({}) as never,
       storage: createJSONStorage(() => {
         try { localStorage.setItem('__gf', '1'); localStorage.removeItem('__gf'); return localStorage; }
         catch { const m = new Map<string, string>(); return { getItem: (k) => m.get(k) ?? null, setItem: (k, v) => void m.set(k, v), removeItem: (k) => void m.delete(k) }; }

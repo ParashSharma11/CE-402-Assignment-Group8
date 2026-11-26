@@ -4,7 +4,7 @@
  */
 import {
   loadFactor, sizeFooting, buildingChecks, raftCheck, correctSpt, stressProfile, validateLayers, fitDirectShear,
-  cuFromUU, interpretOedometer, finalDesign, type FinalDesign, type Borehole, type ColumnInput, type FootingCheck, type SptCorrected,
+  cuFromUU, interpretOedometer, finalDesign, liquefaction, type LiqResult, type FinalDesign, type Borehole, type ColumnInput, type FootingCheck, type SptCorrected,
   type StressPoint, type ShearFit, type OedometerResult,
 } from '../engine';
 import { rowLabel, type ProjectState } from '../store/project';
@@ -19,7 +19,7 @@ export interface ProjectResults {
   lambda: number;
   columns: ColumnInput[];
   colResults: ColumnResult[];
-  perBH: Record<string, { errors: string[]; spt: SptCorrected[]; stressDesign: StressPoint[]; stressMeasured: StressPoint[] }>;
+  perBH: Record<string, { errors: string[]; spt: SptCorrected[]; stressDesign: StressPoint[]; stressMeasured: StressPoint[]; liq: LiqResult | null; liqMCE: LiqResult | null }>;
   lab: { shear: (ShearFit & { name: string })[]; uu: { name: string; cu: number }[]; oed: OedometerResult | null; labErrors: string[] };
   building: ReturnType<typeof buildingChecks> | null;
   /** The design actually proposed: equal-settlement footings + piles where footings cannot work. */
@@ -44,9 +44,10 @@ export function buildColumns(s: Pick<ProjectState, 'building' | 'project'>): { c
       const ov = b.overrides[id];
       const P = (ov?.P ?? b.loads[type]) * lam;
       const MB = (ov?.MB ?? 0) * lam;
+      const ML = (ov?.ML ?? 0) * lam;
       const zone = b.zoning.find((z) => l >= z.from && l <= z.to);
       types[id] = ov ? 'special' : type;
-      columns.push({ id, x: (l - 1) * b.sx, y: r * b.sy, load: { P, MB }, boreholeId: zone?.bh ?? '', shape: ov?.shape ?? 'square' });
+      columns.push({ id, x: (l - 1) * b.sx, y: r * b.sy, load: { P, MB, ML }, boreholeId: zone?.bh ?? '', shape: ov?.shape ?? 'square' });
     }
   }
   return { columns, types };
@@ -62,14 +63,18 @@ export function computeResults(s: ProjectState): ProjectResults {
   for (const bh of s.boreholes) {
     const errs = validateLayers(bh.layers);
     let spt: SptCorrected[] = [], sd: StressPoint[] = [], sm: StressPoint[] = [];
+    let liq: LiqResult | null = null, liqMCE: LiqResult | null = null;
     if (!errs.length) {
       try {
-        spt = correctSpt(bh.spt, bh.layers, bh.designWT);
+        // IS 2131 corrections use the WT at the time of the test (measured, October), not the design WT.
+        spt = correctSpt(bh.spt, bh.layers, bh.measuredWT);
+        liq = liquefaction(bh, { amax: s.project.amax ?? 0.18, Mw: s.project.Mw ?? 7.5 });
+        liqMCE = liquefaction(bh, { amax: s.project.Z ?? 0.36, Mw: s.project.Mw ?? 7.5 });
         sd = stressProfile(bh.layers, bh.designWT);
         sm = stressProfile(bh.layers, bh.measuredWT);
       } catch (e) { errs.push(String((e as Error).message)); }
     }
-    perBH[bh.id] = { errors: errs, spt, stressDesign: sd, stressMeasured: sm };
+    perBH[bh.id] = { errors: errs, spt, stressDesign: sd, stressMeasured: sm, liq, liqMCE };
     errs.forEach((e) => errors.push(`${bh.id}: ${e}`));
   }
 
@@ -88,7 +93,7 @@ export function computeResults(s: ProjectState): ProjectResults {
   const colResults: ColumnResult[] = columns.map((c) => {
     const bh = bhById.get(c.boreholeId);
     if (!bh || perBH[bh.id]?.errors.length) return { col: c, found: false, check: null, type: types[c.id] };
-    const key = `${bh.id}|${c.load.P.toFixed(3)}|${(c.load.MB ?? 0).toFixed(3)}|${c.shape}|${JSON.stringify(opt)}`;
+    const key = `${bh.id}|${c.load.P.toFixed(3)}|${(c.load.MB ?? 0).toFixed(3)}|${(c.load.ML ?? 0).toFixed(3)}|${c.shape}|${JSON.stringify(opt)}`;
     let r = memo.get(key);
     if (!r) {
       try { const z = sizeFooting(c.shape ?? 'square', p.Df, c.load, bh, opt); r = { found: z.found, check: z.check }; }
@@ -123,6 +128,7 @@ export function computeResults(s: ProjectState): ProjectResults {
   try {
     final = finalDesign(columns.filter((c) => bhById.has(c.boreholeId) && !perBH[c.boreholeId]?.errors.length), s.boreholes, p.limits, {
       ...opt, Df: p.Df, sx, sy, clearance: 0.3, alternative: p.alternative ?? 'piles-zone',
+      liq: Object.fromEntries(Object.entries(perBH).filter(([, v]) => v.liq).map(([k, v]) => [k, v.liq!])),
       pile: { D: p.pileD ?? 0.5, cutoff: p.Df, socket: p.pileSocket ?? 1.5, fck: p.fck ?? 30 },
     });
   } catch (e) { errors.push(`Final design: ${(e as Error).message}`); }
@@ -138,8 +144,9 @@ export function computeResults(s: ProjectState): ProjectResults {
     if (gov) checks.push({ name: `Bearing, isolated footings (governing ${gov.col.id})`, value: fmt(gov.check!.qApplied), unit: 'kPa', limit: `≤ qns = ${fmt(gov.check!.bearing.qns)} kPa (FS ${p.FS})`, clause: 'IS 6403:1981', status: gov.check!.passBearing ? 'pass' : 'fail' });
     const pc = final.columns.filter((c) => c.type === 'piles' && c.pile);
     if (pc.length) {
-      const g = pc.reduce((m, c) => (c.col.load.P / (c.pile!.nPiles * c.pile!.Qsafe) > m.col.load.P / (m.pile!.nPiles * m.pile!.Qsafe) ? c : m));
-      checks.push({ name: `Pile capacity (governing ${g.col.id}: ${g.pile!.nPiles} piles Ø${p.pileD ?? 0.5} m × ${fmt(g.pile!.length, 2)} m)`, value: fmt(g.col.load.P), unit: 'kN', limit: `≤ n·Q_safe = ${fmt(g.pile!.nPiles * g.pile!.Qsafe)} kN (FS 2.5)`, clause: 'IS 2911 (Part 1/Sec 2) — TO VERIFY', status: g.col.load.P <= g.pile!.nPiles * g.pile!.Qsafe + 1e-9 ? 'pass' : 'fail' });
+      const u = (c: (typeof pc)[number]) => (c.pile!.PmaxPile ?? 0) / c.pile!.Qsafe;
+      const g = pc.reduce((m, c) => (u(c) > u(m) ? c : m));
+      checks.push({ name: `Pile capacity (governing ${g.col.id}: ${g.pile!.nPiles} piles Ø${p.pileD ?? 0.5} m × ${fmt(g.pile!.length, 2)} m)`, value: fmt(g.pile!.PmaxPile ?? 0), unit: 'kN per pile', limit: `≤ Q_safe = ${fmt(g.pile!.Qsafe)} kN (FS 2.5; incl. moment and downdrag ${fmt(g.pile!.Qneg)} kN)`, clause: 'IS 2911 (Part 1/Sec 2) — TO VERIFY', status: (g.pile!.PmaxPile ?? 0) <= g.pile!.Qsafe + 1e-9 ? 'pass' : 'fail' });
     }
     checks.push({ name: 'Maximum total settlement', value: fmt(final.maxTotal), unit: 'mm', limit: `≤ ${lim.maxTotal} mm`, clause: lim.source, status: final.passTotal ? 'pass' : 'fail' });
     const chk = final.pairs.filter((q) => !q.separated);
@@ -150,16 +157,33 @@ export function computeResults(s: ProjectState): ProjectResults {
       checks.push({ name: `Angular distortion ${wa.a}–${wa.b}`, value: fmt(wa.angular, 5), unit: '', limit: `≤ 1/${Math.round(1 / lim.maxAngular)} = ${fmt(lim.maxAngular, 5)}`, clause: lim.source, status: final.passAngular ? 'pass' : 'fail' });
     }
     checks.push({ name: 'Footings fit the column grid', value: fmt(Math.max(0, ...final.columns.map((c) => Math.max(c.footprint.B, c.footprint.L))), 2), unit: 'm', limit: `≤ spacing − 0.3 m = ${fmt(Math.min(sx, sy) - 0.3, 2)} m`, clause: 'geometry (clear gap 0.3 m ASSUMED)', status: final.columns.every((c) => c.footprint.B <= sx - 0.3 + 1e-9 && c.footprint.L <= sy - 0.3 + 1e-9) ? 'pass' : 'fail' });
+    // Liquefaction (IS 1893 Annex F): isolated-footing zones must have no liquefiable layer at the design amax.
+    for (const z of final.zones) {
+      const L = perBH[z.bh]?.liq; if (!L) continue;
+      const m = perBH[z.bh]?.liqMCE;
+      const extra = m && m.liquefiableLayers.length && !L.liquefiableLayers.length ? ` (at amax = Z = ${p.Z ?? 0.36} g: liquefiable ${m.liquefiableLayers.map((l) => l.symbol).join(', ')})` : '';
+      checks.push({
+        name: `Liquefaction ${z.bh} (${z.type === 'piles' ? 'piled' : 'isolated footings'})${L.liquefiableLayers.length ? `: ${L.liquefiableLayers.map((l) => `${l.symbol} ${l.top}–${l.bottom} m`).join(', ')}` : ''}${extra}`,
+        value: fmt(L.minFS ?? 99, 2), unit: 'min FS', limit: `≥ 1.0 at amax = ${p.amax ?? 0.18} g, Mw ${p.Mw ?? 7.5}`,
+        clause: 'IS 1893 (Part 1):2016 Annex F; Youd et al. (2001) — TO VERIFY',
+        status: !L.liquefiableLayers.length ? ((L.minFS ?? 99) < 1.2 || extra ? 'warn' : 'pass') : z.type === 'piles' ? 'warn' : 'fail',
+      });
+    }
     const pz = final.zones.filter((z) => z.type === 'piles');
+    if (final.isolatedAttempt) checks.push({ name: 'Isolated footings (tried first, incl. neighbouring-footing stress)', value: fmt(final.isolatedAttempt.maxS), unit: 'mm', limit: `≤ ${lim.maxTotal} mm — not met → piles under every column`, clause: lim.source, status: 'warn' });
     if (pz.length) checks.push({ name: `Alternative foundation: piles in ${pz.map((z) => z.bh).join(', ')}${final.jointBetween.length ? `, movement joint at lines ${final.jointBetween.join(', ')}` : ''}`, value: pc.length, unit: `of ${final.columns.length} columns`, limit: 'isolated footings infeasible there', clause: 'Brief criterion 3; IS 1893 joint — TO VERIFY', status: 'warn' });
   }
 
   /* Assumptions */
   const assumptions: Assumption[] = [
     { item: 'Load factor λ', value: `${lambda.toFixed(2)} (g = ${p.group})`, reason: 'Assignment brief: λ = 1 + g/100 on all service loads', source: 'CE 402 brief' },
-    { item: 'Design water table', value: 'seasonal highest (August) per borehole', reason: 'Gives the lowest effective stress → conservative q, W′ and σ′v0', source: 'IS 6403:1981 (water-table effect) — TO VERIFY clause' },
+    { item: 'Design water table', value: 'seasonal highest (August) per borehole — bearing, W′, Schmertmann, liquefaction CSR', reason: 'Gives the lowest effective stress → conservative q, W′ and the highest CSR', source: 'IS 6403:1981 (water-table effect) — TO VERIFY clause' },
+    { item: 'Water table at test / sampling time', value: 'measured 24 h after boring (October) — SPT corrections, (N1)60, σ′v0 and OCR in the clay', reason: 'Corrections normalise N to the stress when the test was done; σ′p comes from samples taken then. Using the August WT would inflate OCR and under-predict consolidation settlement', source: 'IS 2131:1981; effective-stress principle' },
+    { item: 'Design c′ for sands', value: '0 kPa (lab intercepts SM 1.03, SP 0.37 kPa reported only)', reason: 'Non-plastic sand: the least-squares intercept is a fitting artefact / apparent cohesion', source: 'standard practice — TO VERIFY reference' },
+    { item: 'Seismic input (liquefaction)', value: `Zone V, Z = ${p.Z ?? 0.36}; amax = ${p.amax ?? 0.18} g; Mw = ${p.Mw ?? 7.5}; also reported at amax = Z`, reason: 'amax = Z/2 (design basis earthquake) ASSUMED; Mw ASSUMED for the Himalayan source; CE = 1.0 (60 % energy), CB = 1.05 (150 mm hole), rod length = depth', source: 'IS 1893 (Part 1):2016 Table 3, Annex F; Youd et al. (2001) — TO VERIFY' },
+    { item: 'Neighbouring footings', value: 'stress from footings within 15 m added in the clay (Boussinesq superposition)', reason: 'On a 5 m grid the pressure bulbs overlap at the depth of the CI clay', source: 'Das (2016) §5.6' },
     { item: 'Factor of safety', value: `${p.FS} on net ultimate`, reason: 'Assignment design criterion', source: 'IS 6403:1981' },
-    { item: 'Shear failure mode', value: p.mode === 'auto' ? 'auto: local ≤ 29°, general ≥ 36°, interpolated' : p.mode, reason: 'Relative density of the founding sand', source: 'IS 6403:1981 cl. 5.1.2 — TO VERIFY' },
+    { item: 'Shear failure mode', value: p.mode === 'auto' ? 'criterion: φ (local ≤ 29°, general ≥ 36°, interpolated between)' : p.mode, reason: 'IS 6403 allows φ, Dr or e as the criterion; φ is used because it is measured (direct shear). φ is the shear-zone average when that option is on', source: 'IS 6403:1981 cl. 5.1.2 — TO VERIFY' },
     { item: 'Soil strength for IS 6403', value: (p.strength ?? 'zone-average') === 'zone-average' ? 'average over shear zone Df → Df + B' : 'layer at founding level', reason: 'Team method (v1 engine, Gaurav Dtyal): the shear zone extends about B below the base', source: 'IS 6403:1981 cl. 5.1.2 — TO VERIFY' },
     { item: 'Local–general transition (29°–36°)', value: (p.transition ?? 'factors') === 'factors' ? 'interpolate Nc, Nq, Nγ' : 'interpolate qnu', reason: 'IS 6403 says interpolate; team v1 interpolates the factors. Both engines agree to 0.1 % with this choice', source: 'IS 6403:1981 cl. 5.1.2 — TO VERIFY' },
     { item: 'Depth factors', value: p.useDepthFactors ? 'used' : 'not used', reason: p.useDepthFactors ? 'Backfill to be compacted in layers' : 'Backfill compaction not assured', source: 'IS 6403:1981 — TO VERIFY clause' },
@@ -174,8 +198,11 @@ export function computeResults(s: ProjectState): ProjectResults {
   if (oed) assumptions.push({ item: 'Oedometer interpretation', value: `Cc ${oed.Cc.toFixed(3)}, Cr ${oed.Cr.toFixed(3)}, σ′p ${oed.sigmaP.toFixed(0)} kPa`, reason: 'Lab pressures converted from kg/cm² (×98.0665); σ′p by Casagrande (scale-dependent)', source: 'Das (2014) §11.5–11.6' });
 
   const pz = final?.zones.filter((z) => z.type === 'piles') ?? [];
+  const liqZones = final ? final.zones.filter((z) => (perBH[z.bh]?.liq?.liquefiableLayers.length ?? 0) > 0).map((z) => z.bh) : [];
   const proposal = final
-    ? pz.length
+    ? final.isolatedAttempt
+      ? `Isolated footings were tried first and proportioned for equal settlement, but once the stress from the neighbouring footings is added in the CI clay (5 m grid, overlapping pressure bulbs) they settle up to ${final.isolatedAttempt.maxS.toFixed(0)} mm against the ${lim.maxTotal} mm limit${final.isolatedAttempt.worstPair ? `, with δ up to ${final.isolatedAttempt.worstDelta.toFixed(1)} mm (${final.isolatedAttempt.worstPair})` : ''}${liqZones.length ? `; in ${liqZones.join(', ')} the sands are also liquefiable in seismic zone V` : ''}. Proposed: bored cast-in-situ piles Ø${p.pileD ?? 0.5} m under every column, socketed ${p.pileSocket ?? 1.5} m into the dense gravel (toe ${Math.min(...final.columns.filter((c) => c.pile).map((c) => c.pile!.toe)).toFixed(1)}–${Math.max(...final.columns.filter((c) => c.pile).map((c) => c.pile!.toe)).toFixed(1)} m), ${Math.min(...final.columns.filter((c) => c.pile).map((c) => c.pile!.nPiles))}–${Math.max(...final.columns.filter((c) => c.pile).map((c) => c.pile!.nPiles))} piles per column with tie beams. One foundation type for the whole building, so no movement joint is needed; the piles also bypass the liquefiable sands and the stream-side soft ground. Maximum settlement ${final.maxTotal.toFixed(1)} mm. All checks then ${final.passTotal && final.passDiff && final.passAngular && final.passBearing ? 'pass' : 'still need attention'}.`
+      : pz.length
       ? `Isolated footings cannot meet bearing and the ${lim.maxTotal} mm settlement limit in ${pz.map((z) => z.bh).join(', ')} (soft clay under a high water table)${raft ? `, and a raft there would settle ≈ ${raft.sCentre.toFixed(0)} mm` : ''}. Proposed: bored piles Ø${p.pileD ?? 0.5} m to the dense gravel for those grid lines, isolated footings proportioned for equal settlement (s* = ${final.target ? (final.target * 1000).toFixed(1) : '–'} mm) elsewhere${final.jointBetween.length ? `, and a movement joint between grid lines ${final.jointBetween.join(', ')}` : ''}. All checks then ${final.passTotal && final.passDiff && final.passAngular && final.passBearing ? 'pass' : 'still need attention'}.`
       : `Isolated footings proportioned for equal settlement (s* = ${final.target ? (final.target * 1000).toFixed(1) : '–'} mm) satisfy bearing, total and differential settlement everywhere.`
     : 'Design could not be completed — check the inputs.';

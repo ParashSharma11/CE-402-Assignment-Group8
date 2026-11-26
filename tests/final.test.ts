@@ -15,9 +15,22 @@ describe('final design (Mandi example, team method)', () => {
     const p = singlePile(boreholes[2], opt.pile);
     console.log(`pile BH-3: toe ${p.toe} m, L ${p.length.toFixed(2)} m, Qb ${p.Qb.toFixed(0)} kN, Qs ${p.Qs.toFixed(0)} kN, Qsafe ${p.Qsafe.toFixed(0)} kN`);
   });
-  it('BH-3 zone goes on piles; BH-1 and BH-2 on isolated footings', () => {
-    expect(fd.zones.find((z) => z.bh === 'BH-3')!.type).toBe('piles');
-    expect(fd.zones.find((z) => z.bh === 'BH-1')!.type).toBe('isolated');
+  it('with neighbouring-footing stress in the clay, isolated footings fail → piles under every column', () => {
+    expect(fd.isolatedAttempt).not.toBeNull();
+    expect(fd.isolatedAttempt!.maxS).toBeGreaterThan(50);
+    expect(fd.zones.every((z) => z.type === 'piles')).toBe(true);
+    expect(fd.jointBetween).toEqual([]);
+  });
+  it('single-footing analysis (no overlap) would have kept BH-1/BH-2 on footings — the overlap is what changes it', () => {
+    const solo = finalDesign(columns, boreholes, limitsCandidate.sand, { ...opt, overlap: false });
+    expect(solo.zones.find((z) => z.bh === 'BH-3')!.type).toBe('piles');
+    expect(solo.zones.find((z) => z.bh === 'BH-1')!.type).toBe('isolated');
+  });
+  it('eccentric C4 on piles: the moment needs 4 piles (2 piles → 783 + 261 = 1044 kN > Q_safe)', () => {
+    const c4 = fd.columns.find((c) => c.col.id === 'C4')!;
+    expect(c4.pile!.nPiles).toBe(4);
+    // hand: P/4 + M·0.75/(4 × 0.75²) = 1566/4 + 391.5/3 = 391.5 + 130.5 = 522 kN
+    expect(c4.pile!.PmaxPile!).toBeCloseTo(522.0, 0);
   });
   it('every check passes on the final design', () => {
     expect(fd.passBearing).toBe(true);

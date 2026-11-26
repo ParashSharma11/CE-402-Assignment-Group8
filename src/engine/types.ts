@@ -40,6 +40,10 @@ export interface SoilLayer {
   cv?: number;
   /** IS 2131 dilatancy correction applies (very fine / silty sand below the WT). */
   dilatancy?: boolean;
+  /** Fines content (passing 75 µm), % — used for the liquefaction fines correction. */
+  fines?: number;
+  /** Plasticity index, % — used to screen clays for liquefaction susceptibility. */
+  PI?: number;
 }
 
 export interface SptRecord {
@@ -57,7 +61,8 @@ export interface Borehole {
   groundRL: number;
   layers: SoilLayer[];
   spt: SptRecord[];
-  /** Water table measured 24 h after boring, m bgl. */
+  /** Water table measured 24 h after boring, m bgl. This is the WT at the time of the SPT and of sampling, so
+   *  it is used for the IS 2131 corrections, the liquefaction (N1)60 and σ′v0 / OCR in the consolidation analysis. */
   measuredWT: number;
   /** Design (seasonal highest) water table, m bgl. */
   designWT: number;

@@ -66,11 +66,19 @@ export interface DesignOptions extends PressureOptions {
   LoverB?: number;
 }
 
+/**
+ * Water table for σ′v0 (and hence OCR = σ′p/σ′v0) in the consolidation analysis: the WT measured when the samples were
+ * taken (October), consistent with σ′p from those samples. The August-high WT would lower σ′v0, inflate OCR and push
+ * more of Δσ onto the flat recompression branch — unconservative. Bearing and Schmertmann keep the design (August) WT,
+ * which is the conservative case for them. SOURCE: effective-stress principle; reviewer finding (docs/AI_AUDIT.md item 9).
+ */
+export const clayWT = (bh: Borehole): number => bh.measuredWT ?? bh.designWT;
+
 export function checkFooting(footing: Footing, load: Load, bh: Borehole, opt: DesignOptions): FootingCheck {
   const bearing = bearingCapacity({ footing, load, layers: bh.layers, zw: bh.designWT, FS: opt.FS ?? 3, mode: opt.mode, useDepthFactors: opt.useDepthFactors, strength: opt.strength, transition: opt.transition });
   const pr = appliedPressure(footing, load, bh, bearing.areaEff, opt);
   const sch = schmertmann({ footing, layers: bh.layers, zw: bh.designWT, netPressure: pr.qn, tYears: opt.tYears });
-  const con = consolidationSettlement({ footing, layers: bh.layers, zw: bh.designWT, netPressure: pr.qn });
+  const con = consolidationSettlement({ footing, layers: bh.layers, zw: clayWT(bh), netPressure: pr.qn });
   const sTotal = sch.settlement + con.settlement;
   const passBearing = pr.qn <= bearing.qns + 1e-9;
   const passSettlement = sTotal * 1000 <= opt.sAllow + 1e-9;
@@ -173,6 +181,6 @@ export function buildingChecks(settlementsMm: Record<string, number>, cols: Colu
 export function raftCheck(B: number, L: number, Df: number, totalLoad: number, bh: Borehole, opt: Omit<DesignOptions, 'sAllow'> & { sAllow: number }) {
   const footing: Footing = { shape: 'rectangle', B, L, Df };
   const centre = checkFooting(footing, { P: totalLoad }, bh, opt);
-  const conCorner = consolidationSettlement({ footing, layers: bh.layers, zw: bh.designWT, netPressure: centre.qApplied, at: 'corner' });
+  const conCorner = consolidationSettlement({ footing, layers: bh.layers, zw: clayWT(bh), netPressure: centre.qApplied, at: 'corner' });
   return { centre, sCornerConsolidation: conCorner.settlement };
 }

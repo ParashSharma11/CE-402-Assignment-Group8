@@ -14,3 +14,4 @@ export * from './design';
 export const loadFactor = (g: number): number => 1 + g / 100;
 export * from './piles';
 export * from './finalDesign';
+export * from './liquefaction';

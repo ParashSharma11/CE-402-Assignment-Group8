@@ -12,7 +12,10 @@
  *  4. Where piled and footing zones meet, a movement (separation) joint is provided, so pairs across it are not
  *     checked for differential settlement — or piles are used under the whole building if chosen.
  */
-import { checkFooting, adjacentPairs, type ColumnInput, type DesignOptions, type FootingCheck, type SettlementLimits } from './design';
+import { checkFooting, adjacentPairs, clayWT, type ColumnInput, type DesignOptions, type FootingCheck, type SettlementLimits } from './design';
+import { consolidationSettlement } from './settlement';
+import { deltaSigmaAt } from './stressIncrease';
+import type { LiqResult } from './liquefaction';
 import { designPileGroup, type PileDesign, type PileOptions } from './piles';
 import type { Borehole, Footing } from './types';
 
@@ -25,6 +28,12 @@ export interface FinalOptions extends DesignOptions {
   pile: PileOptions;
   /** Where isolated footings fail: piles in that zone with a movement joint, or piles under the whole building. */
   alternative?: 'piles-zone' | 'piles-all';
+  /** Liquefaction result per borehole id. A zone with a liquefiable layer gets piles (seismic zone V). */
+  liq?: Record<string, LiqResult>;
+  /** Include stress from neighbouring footings in the clay consolidation (Boussinesq superposition). Default true. */
+  overlap?: boolean;
+  /** Internal: piles under every column (set when no isolated-footing layout meets the limits). */
+  forceAll?: { reason: string };
 }
 
 export interface FinalColumn {
@@ -32,7 +41,9 @@ export interface FinalColumn {
   type: 'isolated' | 'piles';
   check: FootingCheck | null; // isolated
   pile: PileDesign | null; // piles
-  s: number; // settlement, m
+  s: number; // settlement, m (isolated footings: including neighbouring-footing stress in the clay)
+  /** Settlement of the footing alone, m (no neighbours). */
+  sSingle: number;
   footprint: { B: number; L: number }; // plan size of footing or pile cap, m
 }
 
@@ -46,6 +57,10 @@ export interface FinalDesign {
   maxTotal: number; // mm
   passTotal: boolean; passDiff: boolean; passAngular: boolean; passBearing: boolean;
   jointBetween: string[]; // e.g. ["5–6"]
+  /** Best isolated-footing layout that was tried before switching to piles everywhere (null if not needed). */
+  isolatedAttempt: { maxS: number; worstDelta: number; worstPair: string } | null;
+  /** Worst pair across the joint if there were no joint (justifies it). */
+  acrossJoint: { a: string; b: string; delta: number; angular: number } | null;
   notes: string[];
 }
 
@@ -64,7 +79,7 @@ export function finalDesign(cols: ColumnInput[], bhs: Borehole[], limits: Settle
   const curve = (c: ColumnInput): Trial[] => {
     const b = bh.get(c.boreholeId); if (!b) return [];
     const shape = c.shape ?? 'square';
-    const key = `${b.id}|${c.load.P}|${c.load.MB ?? 0}|${shape}`;
+    const key = `${b.id}|${c.load.P}|${c.load.MB ?? 0}|${c.load.ML ?? 0}|${shape}`;
     const hit = memo.get(key); if (hit) return hit;
     const out: Trial[] = [];
     for (let B = Bmin; B <= Math.min(capX, shape === 'rectangle' ? capY / LoB : capY) + 1e-9; B = +(B + dB).toFixed(4)) {
@@ -82,28 +97,51 @@ export function finalDesign(cols: ColumnInput[], bhs: Borehole[], limits: Settle
 
   // 2. zone decision
   const zoneIds = [...new Set(cols.map((c) => c.boreholeId))];
-  const zoneOk = new Map(zoneIds.map((z) => [z, cols.filter((c) => c.boreholeId === z).every(feasible)]));
+  const liqOf = (z: string) => o.liq?.[z]?.liquefiableLayers ?? [];
+  const staticOk = new Map(zoneIds.map((z) => [z, cols.filter((c) => c.boreholeId === z).every(feasible)]));
+  const zoneOk = new Map(zoneIds.map((z) => [z, staticOk.get(z)! && liqOf(z).length === 0]));
   const anyFail = [...zoneOk.values()].some((v) => !v);
-  const pileZone = (z: string) => (o.alternative === 'piles-all' && anyFail) || !zoneOk.get(z);
+  const pileZone = (z: string) => !!o.forceAll || (o.alternative === 'piles-all' && anyFail) || !zoneOk.get(z);
   const zones = zoneIds.map((z) => ({
     bh: z, type: (pileZone(z) ? 'piles' : 'isolated') as 'isolated' | 'piles',
-    reason: !zoneOk.get(z) ? `isolated footings cannot meet bearing + ${limits.maxTotal} mm settlement within the ${o.sx} m grid` : pileZone(z) ? 'piles under the whole building (chosen)' : `isolated footings feasible`,
+    reason: [
+      !staticOk.get(z) ? `isolated footings cannot meet bearing + ${limits.maxTotal} mm settlement within the ${o.sx} m grid` : '',
+      liqOf(z).length ? `liquefiable ${liqOf(z).map((l) => `${l.symbol} ${l.top}–${l.bottom} m`).join(', ')} (seismic zone V)` : '',
+    ].filter(Boolean).join('; ') || (o.forceAll ? o.forceAll.reason : pileZone(z) ? 'piles under the whole building (chosen)' : 'isolated footings feasible'),
   }));
 
   // 3. piles
   const piles = new Map<string, PileDesign>();
-  for (const c of cols) if (pileZone(c.boreholeId) && bh.get(c.boreholeId)) piles.set(c.id, designPileGroup(c.load.P, bh.get(c.boreholeId)!, o.pile));
+  for (const c of cols) if (pileZone(c.boreholeId) && bh.get(c.boreholeId)) piles.set(c.id, designPileGroup(c.load.P, bh.get(c.boreholeId)!, { ...o.pile, liquefiableTo: o.liq?.[c.boreholeId]?.liquefiableTo ?? 0 }, Math.hypot(c.load.MB ?? 0, c.load.ML ?? 0)));
 
   // adjacency and joints
   const adj = adjacentPairs(cols);
   const typeOf = (c: ColumnInput) => (pileZone(c.boreholeId) ? 'piles' : 'isolated');
-  const jointOn = o.alternative !== 'piles-all';
+  const jointOn = o.alternative !== 'piles-all' && !o.forceAll;
   const separated = (a: ColumnInput, b: ColumnInput) => jointOn && typeOf(a) !== typeOf(b);
 
   // 4. equal-settlement proportioning of the isolated footings
   const iso = cols.filter((c) => typeOf(c) === 'isolated');
   const pick = (c: ColumnInput, T: number) => curve(c).find((t) => t.ok && t.s <= T + 1e-12) ?? null;
-  const sOf = (id: string, chosen: Map<string, Trial>) => (chosen.get(id)?.s ?? piles.get(id)?.sTotal ?? 0);
+  // Settlement including the stress that neighbouring footings add in the clay (their bulbs overlap at 4-11 m on a
+  // 5 m grid). Schmertmann (sand, within ~2B) stays single-footing: the method is defined for one footing.
+  // SOURCE: superposition of Boussinesq rectangles, Das (2016) §5.6.
+  const useOverlap = o.overlap !== false;
+  const withOverlap = (c: ColumnInput, chosen: Map<string, Trial>): number => {
+    const t = chosen.get(c.id); if (!t) return 0;
+    const b = bh.get(c.boreholeId)!;
+    const nb = iso.filter((d) => d.id !== c.id && chosen.has(d.id) && Math.hypot(d.x - c.x, d.y - c.y) <= 3 * Math.max(o.sx, o.sy) + 1e-9);
+    if (!useOverlap || !nb.length) return t.s;
+    // neighbour rectangle (B along x, L along y) with its corner at (xd - B/2, yd - L/2); point = this footing's centre
+    const extra = (zb: number) => nb.reduce((acc, d) => {
+      const u = chosen.get(d.id)!;
+      return acc + deltaSigmaAt(u.check.qApplied, u.B, u.L, c.x - (d.x - u.B / 2), c.y - (d.y - u.L / 2), zb);
+    }, 0);
+    const con = consolidationSettlement({ footing: t.check.footing, layers: b.layers, zw: clayWT(b), netPressure: t.check.qApplied, extra });
+    return t.check.sImmediate + con.settlement;
+  };
+  const sNow = new Map<string, number>();
+  const sOf = (id: string, chosen: Map<string, Trial>) => (chosen.has(id) ? (sNow.get(id) ?? chosen.get(id)!.s) : piles.get(id)?.sTotal ?? 0);
   const evaluate = (chosen: Map<string, Trial>) => adj.map(([a, b, span]) => {
     const delta = Math.abs(sOf(a.id, chosen) - sOf(b.id, chosen)) * 1000;
     const angular = delta / 1000 / span;
@@ -111,36 +149,61 @@ export function finalDesign(cols: ColumnInput[], bhs: Borehole[], limits: Settle
     const sep = separated(a, b);
     return { a: a.id, b: b.id, span, delta, angular, separated: sep, passDiff: sep || delta <= dl + 1e-9, passAngular: sep || angular <= limits.maxAngular + 1e-12 };
   });
-  type Sol = { T: number; chosen: Map<string, Trial>; pairs: FinalPair[] };
+  type Sol = { T: number; chosen: Map<string, Trial>; pairs: FinalPair[]; s: Map<string, number> };
   let best: Sol | null = null;
   let fallback: Sol | null = null; let fallbackWorst = Infinity;
   for (let T = sMax; T >= 0.002; T -= 0.0005) {
-    const chosen = new Map<string, Trial>(); let ok = true;
-    for (const c of iso) { const t = pick(c, T); if (!t) { ok = false; break; } chosen.set(c.id, t); }
+    // Fixed point: footing i is sized so that s_single,i + overlap_i <= T, where overlap_i depends on the neighbours.
+    let chosen = new Map<string, Trial>(); let ok = true; const over = new Map<string, number>();
+    for (let it = 0; it < 3 && ok; it++) {
+      const next = new Map<string, Trial>();
+      for (const c of iso) { const t = pick(c, T - (over.get(c.id) ?? 0)); if (!t) { ok = false; break; } next.set(c.id, t); }
+      if (!ok) break;
+      chosen = next; sNow.clear();
+      for (const c of iso) { const s = withOverlap(c, chosen); sNow.set(c.id, s); over.set(c.id, Math.max(0, s - chosen.get(c.id)!.s)); }
+    }
     if (!ok) break; // smaller targets are impossible too
+    if (iso.some((c) => (sNow.get(c.id) ?? 0) > sMax + 1e-12)) continue;
     const pairs = evaluate(chosen);
-    if (pairs.every((p) => p.passDiff && p.passAngular)) { best = { T, chosen, pairs }; break; }
+    if (pairs.every((p) => p.passDiff && p.passAngular)) { best = { T, chosen, pairs, s: new Map(sNow) }; break; }
     const worst = Math.max(0, ...pairs.filter((p) => !p.separated).map((p) => p.delta));
-    if (worst < fallbackWorst) { fallbackWorst = worst; fallback = { T, chosen, pairs }; }
+    if (worst < fallbackWorst) { fallbackWorst = worst; fallback = { T, chosen, pairs, s: new Map(sNow) }; }
   }
-  const sol = best ?? fallback ?? { T: sMax, chosen: new Map(iso.map((c) => [c.id, pick(c, sMax)!]).filter(([, t]) => t) as [string, Trial][]), pairs: [] as FinalPair[] };
-  if (!best && iso.length) notes.push('No single target settlement satisfies every differential limit with isolated footings; the closest design is shown — consider combined footings, a raft, or piles for more lines.');
+  const sol = best ?? fallback ?? { T: sMax, chosen: new Map(iso.map((c) => [c.id, pick(c, sMax)!]).filter(([, t]) => t) as [string, Trial][]), pairs: [] as FinalPair[], s: new Map<string, number>() };
+  sNow.clear(); for (const c of iso) if (sol.chosen.has(c.id)) sNow.set(c.id, sol.s.get(c.id) ?? withOverlap(c, sol.chosen));
   const pairs = sol.pairs.length ? sol.pairs : evaluate(sol.chosen);
+  if (!best && iso.length && !o.forceAll) {
+    // No isolated-footing layout meets total + differential limits once the neighbouring footings are included:
+    // design criterion 3 → piles under every column (one foundation type, no joint needed).
+    const isoS = iso.map((c) => sNow.get(c.id) ?? 0);
+    const maxS = Math.max(0, ...isoS) * 1000;
+    const wp = pairs.filter((q) => !q.separated).reduce<FinalPair | null>((m, q) => (!m || q.delta > m.delta ? q : m), null);
+    const reason = `isolated footings tried: with neighbouring footings the clay settles up to ${maxS.toFixed(0)} mm (limit ${limits.maxTotal} mm)${wp ? `, δ up to ${wp.delta.toFixed(1)} mm (${wp.a}–${wp.b})` : ''} → piles`;
+    const r = finalDesign(cols, bhs, limits, { ...o, forceAll: { reason } });
+    r.isolatedAttempt = { maxS, worstDelta: wp?.delta ?? 0, worstPair: wp ? `${wp.a}–${wp.b}` : '' };
+    r.zones = r.zones.map((z) => (zoneOk.get(z.bh) ? { ...z, reason } : z));
+    r.notes.unshift(`No isolated-footing layout satisfies IS 1904 once the stress from neighbouring footings is added in the CI clay (max ${maxS.toFixed(0)} mm${wp ? `, worst δ ${wp.delta.toFixed(1)} mm ${wp.a}–${wp.b}` : ''}). Bored piles to the dense gravel are therefore used under every column.`);
+    return r;
+  }
+  if (!best && iso.length) notes.push('No single target settlement satisfies every differential limit with isolated footings; the closest design is shown.');
 
   const columns: FinalColumn[] = cols.map((c) => {
-    if (piles.has(c.id)) { const p = piles.get(c.id)!; return { col: c, type: 'piles', check: null, pile: p, s: p.sTotal, footprint: { B: p.capB, L: p.capB } }; }
+    if (piles.has(c.id)) { const p = piles.get(c.id)!; return { col: c, type: 'piles', check: null, pile: p, s: p.sTotal, sSingle: p.sTotal, footprint: { B: p.capB, L: p.capB } }; }
     const t = sol.chosen.get(c.id) ?? null;
-    return { col: c, type: 'isolated', check: t?.check ?? null, pile: null, s: t?.s ?? 0, footprint: { B: t?.B ?? 0, L: t?.L ?? 0 } };
+    return { col: c, type: 'isolated', check: t?.check ?? null, pile: null, s: sNow.get(c.id) ?? t?.s ?? 0, sSingle: t?.s ?? 0, footprint: { B: t?.B ?? 0, L: t?.L ?? 0 } };
   });
   const maxTotal = Math.max(0, ...columns.map((c) => c.s * 1000));
   const lines = new Set<string>();
   for (const [a, b] of adj) if (separated(a, b) && a.y === b.y) lines.add(`${a.id.slice(1)}–${b.id.slice(1)}`);
+  let acrossJoint: FinalDesign['acrossJoint'] = null;
+  for (const q of pairs) if (q.separated && (!acrossJoint || q.angular > acrossJoint.angular)) acrossJoint = { a: q.a, b: q.b, delta: q.delta, angular: q.angular };
+  if (acrossJoint) notes.push(`Without the joint, ${acrossJoint.a}-${acrossJoint.b} would have δ = ${acrossJoint.delta.toFixed(1)} mm, β = 1/${Math.round(1 / Math.max(acrossJoint.angular, 1e-9))} (limit 1/${Math.round(1 / limits.maxAngular)}): footing and piled columns cannot share a bay, so the joint is required.`);
   if (lines.size) notes.push(`Movement (separation) joint between grid lines ${[...lines].join(', ')}: piled and footing blocks settle independently. In seismic zone V the joint gap must also satisfy IS 1893 — TO VERIFY.`);
   return {
     columns, zones, target: best ? sol.T : null, pairs, maxTotal,
     passTotal: maxTotal <= limits.maxTotal + 1e-9,
     passDiff: pairs.every((p) => p.passDiff), passAngular: pairs.every((p) => p.passAngular),
-    passBearing: columns.every((c) => (c.type === 'piles' ? c.pile!.Qsafe * c.pile!.nPiles >= c.col.load.P - 1e-9 : !!c.check?.passBearing)),
-    jointBetween: [...lines], notes,
+    passBearing: columns.every((c) => (c.type === 'piles' ? (c.pile!.PmaxPile ?? 0) <= c.pile!.Qsafe + 1e-9 : !!c.check?.passBearing)),
+    jointBetween: [...lines], acrossJoint, isolatedAttempt: null, notes,
   };
 }
