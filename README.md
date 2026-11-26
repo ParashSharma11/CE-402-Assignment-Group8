@@ -62,7 +62,7 @@ SI units throughout (kN, kPa, m, mm, kN/m³); γw = 9.81 kN/m³; nothing site-sp
 ## Team (Group 8)
 | Member | Contribution |
 |---|---|
-| **Harshit Pandey** | UI/UX design and front-end of GeoFound (v2), visual direction, motion, integration of the team engines, deployment |
+| **Harshit Pandey** | UI/UX design and front-end of GeoFound (v2); **foundation design** — equal-settlement footing sizing and IS 1904 building checks (`src/engine/design.ts`, `finalDesign.ts`), IS 2911 pile alternative (`src/engine/piles.ts`), oedometer and UU interpretation (`labTests.ts`); integration of the team engines; deployment |
 | **Parash Sharma** | P1 soil profile and P2 SPT / direct-shear engines, v1 platform architecture |
 | **Gaurav Dtyal** | P3 IS 6403 bearing-capacity engine |
 | **Muvan** | P5 settlement engine (IS 8009, Schmertmann, consolidation) |

@@ -1,5 +1,5 @@
 /**
- * P2 — Laboratory test interpretation.
+ * P2 — Laboratory test interpretation. Oedometer and UU: Harshit Pandey; direct shear cross-checked with Parash Sharma's v1 engine.
  */
 import { kgcm2ToKPa } from './units';
 import { rad2deg } from './units';

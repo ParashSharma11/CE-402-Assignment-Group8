@@ -1,4 +1,5 @@
 /**
+ * Module owner: Harshit Pandey.
  * Footing design: applied net pressure, sizing against bearing (FS) and settlement, and the
  * building-level checks of total settlement, differential settlement and angular distortion.
  * No site values live here — limits, loads, grid and boreholes are all inputs.

@@ -1,5 +1,5 @@
 /**
- * Final foundation design for the whole building.
+ * Final foundation design for the whole building. Module owner: Harshit Pandey.
  *  1. Isolated footings are tried in every borehole zone. A zone is feasible only if every column in it can be given a
  *     footing that (a) passes IS 6403 bearing with the required FS, (b) settles ≤ the IS 1904 total limit, and
  *     (c) fits the grid (B, L ≤ spacing − clearance, so neighbouring footings do not touch).

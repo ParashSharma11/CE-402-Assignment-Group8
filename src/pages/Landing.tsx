@@ -186,7 +186,7 @@ const TICKER_A = [
 const TICKER_B = ['IS 6403:1981', 'BEARING CAPACITY', 'IS 1904:1986', 'SETTLEMENT', 'IS 2131:1981', 'SPT N', 'BOUSSINESQ', 'SCHMERTMANN 1978', 'CONSOLIDATION'];
 
 const TEAM = [
-  { name: 'Harshit Pandey', tag: 'UI · UX', role: 'GeoFound UI/UX design and front-end, visual direction and motion, integration of the team engines, deployment.', lead: true },
+  { name: 'Harshit Pandey', tag: 'UI · DESIGN', role: 'GeoFound UI/UX and front-end; foundation design — equal-settlement footing sizing, IS 1904 building checks, IS 2911 pile alternative; oedometer and UU interpretation; integration and deployment.', lead: true },
   { name: 'Parash Sharma', tag: 'P1 · P2', role: 'Soil-profile engine; IS 2131 SPT corrections and direct-shear least squares; v1 platform architecture.' },
   { name: 'Gaurav Dtyal', tag: 'P3', role: 'IS 6403:1981 bearing-capacity engine — shape, depth, inclination and water-table factors.' },
   { name: 'Namit Mehta', tag: 'P4', role: 'Stress increase — Boussinesq superposition under centre and corner, and the 2:1 method.' },

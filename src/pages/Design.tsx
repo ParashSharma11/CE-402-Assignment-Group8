@@ -51,7 +51,7 @@ export default function Design() {
         </div>
 
         <Card interactive={false} className="mb-6 p-6">
-          <div className="hud mb-3 flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-accent" />design decision</div>
+          <div className="hud mb-3 flex flex-wrap items-center justify-between gap-2"><span className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-accent" />design decision</span><span className="normal-case tracking-normal">final design + pile module — <span className="text-accent">Harshit Pandey</span></span></div>
           <p className="max-w-4xl text-[16px] leading-relaxed text-ink">{res.alternative.proposal}</p>
           <div className="mt-4 flex flex-wrap gap-2">
             {fd.zones.map((z) => <Chip key={z.bh} tone={z.type === 'piles' ? 'verify' : 'default'}>{z.bh}: {z.type === 'piles' ? 'bored piles' : 'isolated footings'} — {z.reason}</Chip>)}

@@ -1,4 +1,5 @@
 /**
+ * Module owner: Harshit Pandey.
  * Alternative foundation — bored cast-in-situ piles (end bearing in a dense granular stratum + shaft friction).
  * Used where isolated footings cannot meet the bearing / settlement criteria (assignment design criterion 3).
  *

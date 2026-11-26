@@ -132,7 +132,7 @@ export function Footer() {
   return (
     <footer className="no-print mt-24 border-t border-line-soft">
       <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-4 px-4 py-8 sm:px-8">
-        <span className="hud">GeoFound · CE 402 · IIT Mandi · Group 8 — UI/UX Harshit Pandey · P1–P2 Parash Sharma · P3 Gaurav Dtyal · P4 Namit Mehta · P5 Muvan</span>
+        <span className="hud">GeoFound · CE 402 · IIT Mandi · Group 8 — UI/UX + foundation design Harshit Pandey · P1–P2 Parash Sharma · P3 Gaurav Dtyal · P4 Namit Mehta · P5 Muvan</span>
         <span className="hud">IS 6403:1981 · IS 1904:1986 · IS 2131:1981 · SI units</span>
       </div>
     </footer>

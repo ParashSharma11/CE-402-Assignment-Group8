@@ -40,7 +40,7 @@ export default function CrossCheck({ check, bh, project, lab }: { check: Footing
         <Chip>two independent implementations</Chip>
       </div>
       <p className="mb-2 max-w-3xl text-[13px] text-warm">The team's original calculation engines run live on the same inputs. Agreement within 0.5 % is shown green; any larger gap is a method difference to justify in the report.</p>
-      <p className="mb-5 font-mono text-[11px] text-muted">GeoFound (v2) UI, integration and cross-check — <span className="text-accent">Harshit Pandey</span></p>
+      <p className="mb-5 font-mono text-[11px] text-muted">GeoFound (v2) UI, foundation design (final design, piles, IS 1904 checks) and cross-check — <span className="text-accent">Harshit Pandey</span></p>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[760px] text-left text-[13px]">
           <thead><tr className="border-b border-line-soft">{['Module', 'Engine author (v1)', 'Quantity', 'v1', 'v2', 'Δ', ''].map((h) => <th key={h} className="py-2 font-mono text-[10px] uppercase tracking-[0.12em] text-muted">{h}</th>)}</tr></thead>
